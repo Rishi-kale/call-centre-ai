@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+callradar.db
+data/audio/*.mp3
+data/metadata/*.json
+!data/.gitkeep
+.venv/

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Call-Centre Radar</title>
+<style>
+  :root{
+    --bg:#0c1118; --panel:#141b26; --panel-2:#1b2430; --line:#26303f;
+    --ink:#e8eef6; --muted:#8595a8; --dim:#5c6a7e;
+    --agent:#4aa3df; --caller:#e8b04b;
+    --ok:#3fb968; --warn:#e0a53b; --hot:#e5683c; --crit:#e0435a;
+    --accent:#5ad1c4;
+    --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .app{display:grid;grid-template-columns:288px 1fr;min-height:100vh}
+  /* ---- left rail ---- */
+  .rail{background:var(--panel);border-right:1px solid var(--line);
+        display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  .brand{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
+  .brand h1{margin:0;font-size:15px;letter-spacing:.14em;text-transform:uppercase;
+            font-weight:700;display:flex;align-items:center;gap:9px}
+  .pulse{width:9px;height:9px;border-radius:50%;background:var(--accent);
+         box-shadow:0 0 0 0 rgba(90,209,196,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(90,209,196,.55)}
+    70%{box-shadow:0 0 0 10px rgba(90,209,196,0)}100%{box-shadow:0 0 0 0 rgba(90,209,196,0)}}
+  .brand .sub{color:var(--dim);font-size:11px;letter-spacing:.05em;margin-top:3px}
+  .nav{display:flex;flex-direction:column;padding:10px 8px;gap:2px;border-bottom:1px solid var(--line)}
+  .nav button{all:unset;cursor:pointer;padding:9px 12px;border-radius:7px;color:var(--muted);
+              font-size:13px;display:flex;align-items:center;gap:10px}
+  .nav button:hover{background:var(--panel-2);color:var(--ink)}
+  .nav button.on{background:var(--panel-2);color:var(--ink);
+                 box-shadow:inset 2px 0 0 var(--accent)}
+  .rail .list{overflow:auto;flex:1;padding:8px}
+  .rail .list h3{color:var(--dim);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+                 margin:10px 10px 6px}
+  .cust{display:flex;align-items:center;justify-content:space-between;gap:8px;
+        padding:9px 10px;border-radius:8px;cursor:pointer}
+  .cust:hover{background:var(--panel-2)}
+  .cust.on{background:var(--panel-2);outline:1px solid var(--line)}
+  .cust .nm{font-size:13px}
+  .cust .meta{color:var(--dim);font-size:11px;font-family:var(--mono)}
+  /* ---- main ---- */
+  .main{padding:22px 26px 60px;max-width:1080px}
+  .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+  .head h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em}
+  .head .note{color:var(--muted);font-size:12px}
+  .upload{all:unset;cursor:pointer;font-size:12px;color:var(--accent);
+          border:1px solid var(--line);padding:7px 12px;border-radius:7px}
+  .upload:hover{background:var(--panel)}
+  /* score dot */
+  .score{font-family:var(--mono);font-weight:600;font-size:12px;
+         padding:2px 8px;border-radius:20px;display:inline-block;min-width:34px;text-align:center}
+  .s-ok{background:rgba(63,185,104,.14);color:#6fe09a}
+  .s-warn{background:rgba(224,165,59,.15);color:#f0c069}
+  .s-hot{background:rgba(229,104,60,.16);color:#f59873}
+  .s-crit{background:rgba(224,67,90,.18);color:#f57a8c}
+  /* attention rows */
+  .row{display:grid;grid-template-columns:46px 1fr auto;gap:14px;align-items:center;
+       padding:13px 14px;background:var(--panel);border:1px solid var(--line);
+       border-radius:10px;margin-bottom:9px;cursor:pointer;transition:border-color .12s}
+  .row:hover{border-color:var(--dim)}
+  .row .who{font-weight:600}
+  .row .sm{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .row .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted);
+       border:1px solid var(--line);padding:1px 7px;border-radius:20px}
+  .tag.res-unresolved{color:#f57a8c;border-color:rgba(224,67,90,.4)}
+  .tag.res-escalated{color:#f59873;border-color:rgba(229,104,60,.4)}
+  .tag.res-follow_up_promised{color:#f0c069;border-color:rgba(224,165,59,.4)}
+  .tag.res-resolved{color:#6fe09a;border-color:rgba(63,185,104,.4)}
+  /* call view */
+  .grid2{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}.app{grid-template-columns:1fr}
+    .rail{position:static;height:auto}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .card h4{margin:0 0 10px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+  audio{width:100%;margin-top:4px;filter:saturate(.6)}
+  .summary{font-size:15px;line-height:1.55}
+  /* transcript */
+  .turn{display:flex;gap:12px;padding:7px 0;border-top:1px solid var(--line)}
+  .turn:first-child{border-top:none}
+  .ts{all:unset;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--dim);
+      min-width:46px;padding-top:2px}
+  .ts:hover{color:var(--accent)}
+  .turn .body{flex:1}
+  .spk{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  .spk.agent{color:var(--agent)} .spk.caller{color:var(--caller)}
+  .turn.hl{background:rgba(90,209,196,.07);border-radius:6px;margin:0 -8px;padding:7px 8px}
+  /* mood timeline */
+  .mood{display:flex;align-items:center;gap:0;margin-top:6px}
+  .chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;
+        border:1px solid var(--line)}
+  .m-positive{color:#6fe09a} .m-calm{color:var(--muted)}
+  .m-concerned{color:#f0c069} .m-frustrated{color:#f57a8c}
+  .track{flex:1;height:2px;background:linear-gradient(90deg,var(--ok),var(--crit));
+         margin:0 10px;position:relative;border-radius:2px}
+  .marker{position:absolute;top:-4px;width:10px;height:10px;border-radius:50%;
+          background:var(--hot);border:2px solid var(--bg)}
+  /* evidence */
+  .ev{background:var(--panel-2);border:1px solid var(--line);border-left:2px solid var(--accent);
+      border-radius:6px;padding:9px 11px;margin-top:8px;cursor:pointer}
+  .ev:hover{border-left-color:var(--caller)}
+  .ev .q{font-size:12.5px;color:var(--ink)}
+  .ev .at{font-family:var(--mono);font-size:10.5px;color:var(--accent);margin-top:3px}
+  .reasons{list-style:none;margin:0;padding:0}
+  .reasons li{display:flex;justify-content:space-between;font-size:12.5px;
+              padding:6px 0;border-top:1px solid var(--line);color:var(--muted)}
+  .reasons li:first-child{border-top:none}
+  .reasons b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  .kv{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+  .kv:first-child{border-top:none} .kv .k{color:var(--muted)}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid var(--line)}
+  th{color:var(--dim);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  td.n{font-family:var(--mono)}
+  .bar{height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;min-width:90px}
+  .bar>span{display:block;height:100%;background:var(--accent)}
+  .empty{color:var(--dim);padding:40px;text-align:center}
+  .back{all:unset;cursor:pointer;color:var(--accent);font-size:12px;margin-bottom:12px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <h1><span class="pulse"></span> Call Radar</h1>
+      <div class="sub">conversation intelligence</div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="list" id="custList"></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<input type="file" id="fileInput" accept=".zip" style="display:none">
+
+<script>
+const API = "";
+const $ = s => document.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const get = p => fetch(API+p).then(r=>r.json());
+const fmtT = s => s==null?"—":`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+const scoreClass = n => n>=75?"s-crit":n>=50?"s-hot":n>=25?"s-warn":"s-ok";
+const state = {view:"attention", customer:null, call:null};
+
+const NAV = [["attention","Needs attention"],["trends","Trends"],["agents","Agents"]];
+function renderNav(){
+  const n=$("#nav"); n.innerHTML="";
+  NAV.forEach(([k,label])=>{
+    const b=el("button",state.view===k&&!state.call?"on":"",label);
+    b.onclick=()=>{state.call=null;state.customer=null;state.view=k;route();};
+    n.appendChild(b);
+  });
+}
+
+async function renderCustomers(){
+  const list=$("#custList"); list.innerHTML="";
+  list.appendChild(el("h3",null,"Customers"));
+  const cs=await get("/api/customers");
+  cs.forEach(c=>{
+    const row=el("div","cust"+(state.customer===c.customer_name?" on":""));
+    row.appendChild(el("span","nm",c.customer_name));
+    const m=el("span","meta");
+    m.appendChild(el("span","score "+scoreClass(c.max_attention||0),String(c.max_attention||0)));
+    m.append(` ${c.n}`);
+    row.appendChild(m);
+    row.onclick=()=>{state.customer=c.customer_name;state.call=null;state.view="customer";route();};
+    list.appendChild(row);
+  });
+}
+
+/* ---------- views ---------- */
+async function viewAttention(){
+  const m=$("#main"); m.innerHTML="";
+  const head=el("div","head");
+  head.appendChild(el("div",null,`<h2>Needs a manager's attention</h2>
+    <div class="note">Ranked across all calls. Higher score = more likely to need follow-up.</div>`));
+  const up=el("button","upload","Upload recordings ▲"); up.onclick=()=>$("#fileInput").click();
+  head.appendChild(up); m.appendChild(head);
+  const rows=await get("/api/attention?limit=50");
+  if(!rows.length){m.appendChild(el("div","empty","No calls yet. Seed demo data or upload a .zip."));return;}
+  rows.forEach(r=>{
+    const row=el("div","row");
+    row.appendChild(el("div","score "+scoreClass(r.attention),String(r.attention)));
+    const mid=el("div");
+    mid.appendChild(el("div","who",`${r.customer_name} <span style="color:var(--dim);font-weight:400">· ${r.agent_name}</span>`));
+    mid.appendChild(el("div","sm",r.summary||""));
+    const tags=el("div","tags");
+    tags.appendChild(el("span","tag res-"+r.resolution,r.resolution.replace(/_/g," ")));
+    tags.appendChild(el("span","tag",`${r.start_mood} → ${r.end_mood}`));
+    mid.appendChild(tags); row.appendChild(mid);
+    row.appendChild(el("div","tag",r.intent_label));
+    row.onclick=()=>openCall(r.sid);
+    m.appendChild(row);
+  });
+}
+
+async function viewCustomer(){
+  const m=$("#main"); m.innerHTML="";
+  m.appendChild(el("div","head",`<div><h2>${state.customer}</h2>
+    <div class="note">Full call history</div></div>`));
+  const calls=await get(`/api/customers/${encodeURIComponent(state.customer)}/calls`);
+  calls.forEach(r=>{
+    const row=el("div","row");
+    row.appendChild(el("div","score "+scoreClass(r.attention),String(r.attention)));
+    const mid=el("div");
+    mid.appendChild(el("div","who",new Date(r.start_ms).toLocaleString()));
+    mid.appendChild(el("div","sm",r.summary||""));
+    const tags=el("div","tags");
+    tags.appendChild(el("span","tag res-"+r.resolution,r.resolution.replace(/_/g," ")));
+    tags.appendChild(el("span","tag",`${r.start_mood} → ${r.end_mood}`));
+    tags.appendChild(el("span","tag",fmtT(r.duration_s)));
+    mid.appendChild(tags); row.appendChild(mid);
+    row.appendChild(el("div","tag",r.intent_label));
+    row.onclick=()=>openCall(r.sid);
+    m.appendChild(row);
+  });
+  if(!calls.length) m.appendChild(el("div","empty","No calls."));
+}
+
+async function viewTrends(){
+  const m=$("#main"); m.innerHTML="";
+  m.appendChild(el("div","head",`<div><h2>Trending issues</h2>
+    <div class="note">Call volume by intent, with resolution rate.</div></div>`));
+  const t=await get("/api/trends");
+  const max=Math.max(...t.map(x=>x.n),1);
+  const card=el("div","card"); const tbl=el("table");
+  tbl.innerHTML="<tr><th>Issue</th><th>Volume</th><th>Resolved</th><th>Avg attention</th></tr>";
+  t.forEach(x=>{
+    const tr=el("tr");
+    tr.innerHTML=`<td>${x.intent_cat.replace(/_/g," ")}</td>
+      <td><div class="bar"><span style="width:${100*x.n/max}%"></span></div></td>
+      <td class="n">${x.resolved}/${x.n}</td>
+      <td><span class="score ${scoreClass(x.avg_attention)}">${Math.round(x.avg_attention)}</span></td>`;
+    tbl.appendChild(tr);
+  });
+  card.appendChild(tbl); m.appendChild(card);
+}
+
+async function viewAgents(){
+  const m=$("#main"); m.innerHTML="";
+  m.appendChild(el("div","head",`<div><h2>Agents</h2>
+    <div class="note">Volume, handle time and outcomes per agent.</div></div>`));
+  const a=await get("/api/agents");
+  const card=el("div","card"); const tbl=el("table");
+  tbl.innerHTML="<tr><th>Agent</th><th>Calls</th><th>Avg handle</th><th>Resolved</th><th>Avg attention</th></tr>";
+  a.forEach(x=>{
+    const tr=el("tr");
+    tr.innerHTML=`<td>${x.agent_name}</td><td class="n">${x.calls}</td>
+      <td class="n">${fmtT(x.avg_handle_s)}</td>
+      <td class="n">${x.resolved}/${x.calls}</td>
+      <td><span class="score ${scoreClass(x.avg_attention)}">${Math.round(x.avg_attention)}</span></td>`;
+    tbl.appendChild(tr);
+  });
+  card.appendChild(tbl); m.appendChild(card);
+}
+
+/* ---------- per-call ---------- */
+let audioEl=null;
+function seek(t){ if(audioEl&&t!=null){audioEl.currentTime=t;audioEl.play();highlightTurn(t);} }
+function highlightTurn(t){
+  document.querySelectorAll(".turn").forEach(n=>n.classList.remove("hl"));
+  const el=[...document.querySelectorAll(".turn")].reverse()
+    .find(n=>parseFloat(n.dataset.t)<=t+0.01);
+  if(el){el.classList.add("hl");el.scrollIntoView({block:"center",behavior:"smooth"});}
+}
+
+async function openCall(sid){
+  state.call=sid; state.view="call"; renderNav();
+  const c=await get(`/api/calls/${sid}`); const a=c.analysis_json;
+  const m=$("#main"); m.innerHTML="";
+  const back=el("button","back","← back"); back.onclick=()=>{state.call=null;route();};
+  m.appendChild(back);
+  m.appendChild(el("div","head",`<div><h2>${c.customer_name}
+    <span style="color:var(--dim);font-weight:400;font-size:15px">· ${c.agent_name}</span></h2>
+    <div class="note">${new Date(c.start_ms).toLocaleString()} · ${fmtT(c.duration_s)} · ${c.sid}</div></div>
+    <span class="score ${scoreClass(c.attention)}" style="font-size:15px;padding:6px 12px">${c.attention}</span>`);
+
+  const grid=el("div","grid2");
+  const left=el("div"), right=el("div");
+
+  // player + summary
+  const player=el("div","card");
+  player.appendChild(el("h4",null,"Recording"));
+  const au=el("audio"); au.controls=true; au.src=`/audio/${c.sid}.mp3`; au.preload="metadata";
+  player.appendChild(au); audioEl=au;
+  au.ontimeupdate=()=>highlightTurn(au.currentTime);
+  left.appendChild(player);
+
+  const sum=el("div","card");
+  sum.appendChild(el("h4",null,"AI summary"));
+  sum.appendChild(el("div","summary",c.summary||""));
+  left.appendChild(sum);
+
+  // transcript
+  const tc=el("div","card");
+  tc.appendChild(el("h4",null,"Transcript · click a timestamp to hear it"));
+  (c.transcript||[]).forEach(t=>{
+    const turn=el("div","turn"); turn.dataset.t=t.start;
+    const ts=el("button","ts",fmtT(t.start)); ts.onclick=()=>seek(t.start);
+    turn.appendChild(ts);
+    const b=el("div","body");
+    b.appendChild(el("div","spk "+t.speaker,t.speaker));
+    b.appendChild(el("div",null,t.text));
+    turn.appendChild(b); tc.appendChild(turn);
+  });
+  left.appendChild(tc);
+
+  // right column: intent, mood, resolution, attention
+  const evChip=(ev,label)=>{
+    if(!ev){return el("div","note","No supporting evidence found.");}
+    const d=el("div","ev");
+    d.appendChild(el("div","q",`"${ev.quote}"`));
+    d.appendChild(el("div","at",`▶ ${fmtT(ev.t)} — click to hear`));
+    d.onclick=()=>seek(ev.t); return d;
+  };
+
+  const ic=el("div","card");
+  ic.appendChild(el("h4",null,"Intent"));
+  ic.appendChild(el("div","summary",a.intent.label));
+  ic.appendChild(evChip(a.intent.evidence));
+  right.appendChild(ic);
+
+  const mc=el("div","card");
+  mc.appendChild(el("h4",null,"Mood"));
+  const mood=el("div","mood");
+  mood.appendChild(el("span","chip m-"+a.mood.start_mood,a.mood.start_mood));
+  const track=el("div","track");
+  if(a.mood.shifted&&a.mood.shift){
+    const pct=Math.min(90,Math.max(10,100*(a.mood.shift.t/(c.duration_s||1))));
+    const mk=el("div","marker"); mk.style.left=pct+"%"; track.appendChild(mk);
+  }
+  mood.appendChild(track);
+  mood.appendChild(el("span","chip m-"+a.mood.end_mood,a.mood.end_mood));
+  mc.appendChild(mood);
+  if(a.mood.shifted&&a.mood.shift){
+    mc.appendChild(el("div","note",`<br>Shifted at ${fmtT(a.mood.shift.t)}:`));
+    mc.appendChild(evChip(a.mood.shift));
+  } else { mc.appendChild(el("div","note","<br>No clear mood shift.")); }
+  right.appendChild(mc);
+
+  const rc=el("div","card");
+  rc.appendChild(el("h4",null,"Resolution"));
+  rc.appendChild(el("span","tag res-"+a.resolution.status,a.resolution.status.replace(/_/g," ")));
+  rc.appendChild(evChip(a.resolution.evidence));
+  right.appendChild(rc);
+
+  const ac=el("div","card");
+  ac.appendChild(el("h4",null,`Attention score · ${c.attention}/100`));
+  const ul=el("ul","reasons");
+  (a.attention.reasons||[]).forEach(r=>{
+    const li=el("li"); li.innerHTML=`<span>${r.factor.replace(/_/g," ")}</span><b>+${r.weight}</b>`;
+    if(r.t!=null){li.style.cursor="pointer";li.onclick=()=>seek(r.t);}
+    ul.appendChild(li);
+  });
+  ac.appendChild(ul); right.appendChild(ac);
+
+  grid.appendChild(left); grid.appendChild(right); m.appendChild(grid);
+}
+
+/* ---------- routing + upload ---------- */
+function route(){
+  renderNav(); renderCustomers();
+  if(state.call) return;                 // openCall renders itself
+  if(state.view==="customer") return viewCustomer();
+  if(state.view==="trends")   return viewTrends();
+  if(state.view==="agents")   return viewAgents();
+  return viewAttention();
+}
+$("#fileInput").addEventListener("change", async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const fd=new FormData(); fd.append("file",f);
+  const btn=document.querySelector(".upload"); if(btn) btn.textContent="Processing…";
+  try{
+    const r=await fetch("/api/upload",{method:"POST",body:fd}).then(r=>r.json());
+    alert(`Ingested ${r.count} call(s).`); route();
+  }catch(err){ alert("Upload failed: "+err); }
+  e.target.value="";
+});
+route();
+</script>
+</body>
+</html>

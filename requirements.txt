@@ -1,0 +1,14 @@
+# --- API + storage ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9      # file uploads
+
+# --- transcription ---
+faster-whisper>=1.0          # speech-to-text (CTranslate2 Whisper)
+soundfile>=0.12              # audio I/O for the demo-audio synthesiser
+numpy>=1.24
+
+# --- analysis (optional LLM backend) ---
+anthropic>=0.39             # only used if ANTHROPIC_API_KEY is set
+
+# ffmpeg is required on the system PATH (apt install ffmpeg / brew install ffmpeg)
