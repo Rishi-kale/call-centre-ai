@@ -36,7 +36,11 @@ NEGATIVE = {"angry", "annoyed", "frustrated", "upset", "unacceptable", "ridiculo
 POSITIVE = {"thank", "thanks", "great", "perfect", "brilliant", "appreciate",
             "wonderful", "helpful", "sorted", "resolved", "happy", "cheers"}
 RESOLVED_CUES = ["sorted", "resolved", "all set", "taken care of", "that's fixed",
-                 "you're all good", "problem solved", "refunded", "reversed the charge"]
+                 "you're all good", "problem solved", "refunded", "reversed the charge",
+                 "ordered your replacement", "ordered a new", "sent you a new",
+                 "should receive it", "on its way", "already taken care of",
+                 "have ordered", "have issued", "issued a new", "unblocked your",
+                 "reset your", "updated your", "processed the", "cancelled the"]
 FOLLOWUP_CUES = ["call you back", "callback", "within 48 hours", "within 24 hours",
                  "someone will call", "we'll be in touch", "log a case", "raise a ticket"]
 ESCALATE_CUES = ["escalate", "put you through", "transfer you", "my manager",

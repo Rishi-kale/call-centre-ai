@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run API + dashboard (uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["backend.api:app", "--host", "127.0.0.1", "--port", "8000"],
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    },
+    {
+      "name": "Batch: transcribe + analyse (LIMIT=20)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "backend.batch",
+      "args": ["--limit", "20"],
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    },
+    {
+      "name": "Seed demo data",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "backend.seed_demo",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    }
+  ]
+}

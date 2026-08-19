@@ -90,4 +90,4 @@ async def upload(file: UploadFile = File(...)):
 # ---- frontend -------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return (FRONTEND_DIR / "index.html").read_text()
+    return (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")

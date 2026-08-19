@@ -84,7 +84,7 @@ def audio_duration_s(mp3_path: str) -> float:
 
 def load_metadata(json_path: str) -> dict:
     """Parse one metadata file. Note the caller-name key literally has spaces."""
-    m = json.load(open(json_path))
+    m = json.load(open(json_path, encoding="utf-8"))
     labels = m.get("labels", {}) or {}
     start_ms = m.get("start_time_ms")
     end_ms = m.get("end_time_ms")

@@ -279,7 +279,7 @@ async function openCall(sid){
   m.appendChild(el("div","head",`<div><h2>${c.customer_name}
     <span style="color:var(--dim);font-weight:400;font-size:15px">· ${c.agent_name}</span></h2>
     <div class="note">${new Date(c.start_ms).toLocaleString()} · ${fmtT(c.duration_s)} · ${c.sid}</div></div>
-    <span class="score ${scoreClass(c.attention)}" style="font-size:15px;padding:6px 12px">${c.attention}</span>`);
+    <span class="score ${scoreClass(c.attention)}" style="font-size:15px;padding:6px 12px">${c.attention}</span>`));
 
   const grid=el("div","grid2");
   const left=el("div"), right=el("div");
