@@ -1,12 +1,11 @@
 """Read-only API over the pre-computed analysis, plus a live /upload that runs the
 same pipeline. Serves the dashboard and the recordings (with range support so the
 player can seek to a cited timestamp)."""
-import io, zipfile, tempfile, os, shutil
-from pathlib import Path
+import asyncio
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from . import db
-from .config import AUDIO_DIR, META_DIR, FRONTEND_DIR
+from .config import AUDIO_DIR, FRONTEND_DIR
 
 app = FastAPI(title="Call-Centre Radar")
 
@@ -45,6 +44,16 @@ def trends():
     return db.trends()
 
 
+@app.get("/api/trends/timeline")
+def trends_timeline(days: int = 7):
+    return db.attention_timeline(days)
+
+
+@app.get("/api/stats")
+def stats():
+    return db.overview_stats()
+
+
 @app.get("/api/agents")
 def agents():
     return db.agent_stats()
@@ -61,30 +70,44 @@ def audio(sid: str):
 
 # ---- live upload: same pipeline as the batch ------------------------------
 @app.post("/api/upload")
-async def upload(file: UploadFile = File(...)):
-    """Accept a .zip (audio/ + metadata/), or a single .mp3 / .json.
-    Runs transcribe -> analyse -> insert and returns the new call ids."""
-    from . import batch  # imported here so the API starts even without whisper installed
-    raw = await file.read()
+async def upload(file: UploadFile = File(...), wait: bool = False):
+    """Accept a .zip of audio/ + metadata/ and queue it for ingest.
+
+    Returns 202 with a job id immediately -- transcription costs ~30s per call, so a
+    100-call zip would run ~50 minutes and time out if processed inside the request.
+    Poll /api/jobs/{id} for progress.
+
+    wait=true processes inline and returns the finished job instead. Handy for small
+    uploads and scripted tests; do not use it for large batches.
+    """
+    from . import jobs
     name = (file.filename or "upload").lower()
-    tmp = tempfile.mkdtemp(prefix="cr_up_")
-    new_sids = []
-    try:
-        if name.endswith(".zip"):
-            with zipfile.ZipFile(io.BytesIO(raw)) as z:
-                z.extractall(tmp)
-            audios = {p.stem: p for p in Path(tmp).rglob("*.mp3")}
-            metas = {p.stem: p for p in Path(tmp).rglob("*.json")}
-            for sid in sorted(set(audios) & set(metas)):
-                shutil.copy(audios[sid], AUDIO_DIR / f"{sid}.mp3")
-                new_sids.append(batch.ingest_one(str(audios[sid]), str(metas[sid])))
-        else:
-            # single file: expect its partner alongside via a .zip normally, but
-            # allow a lone mp3+json pair dropped into data/ dirs
-            raise HTTPException(400, "upload a .zip containing audio/ and metadata/")
-        return JSONResponse({"ingested": new_sids, "count": len(new_sids)})
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+    if not name.endswith(".zip"):
+        raise HTTPException(400, "upload a .zip containing audio/ and metadata/")
+    raw = await file.read()
+    job = jobs.create_job(file.filename or "upload.zip", raw)
+    if not wait:
+        return JSONResponse(job, status_code=202)
+    while True:                                   # inline mode: drain then report
+        cur = jobs.get_job(job["id"])
+        if cur is None or cur["status"] in ("done", "failed"):
+            return JSONResponse(cur or job)
+        await asyncio.sleep(0.4)
+
+
+@app.get("/api/jobs")
+def jobs_list(limit: int = 20):
+    from . import jobs
+    return jobs.list_jobs(limit)
+
+
+@app.get("/api/jobs/{job_id}")
+def job_status(job_id: str):
+    from . import jobs
+    job = jobs.get_job(job_id)
+    if not job:
+        raise HTTPException(404, "job not found")
+    return job
 
 
 # ---- frontend -------------------------------------------------------------

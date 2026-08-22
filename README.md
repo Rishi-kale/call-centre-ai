@@ -21,6 +21,9 @@ exact moment in the call that justifies it.
   the transcript, the summary, and a mood timeline. **Click any timestamp or evidence
   quote and the player jumps there and plays it.**
 
+**Developers:** [ARCHITECTURE.md](ARCHITECTURE.md) walks the whole pipeline stage by stage — every
+model, every configuration, and the failure each stage exists to prevent.
+
 ## Requirements
 
 - Python 3.10+
@@ -86,9 +89,30 @@ on the day flows through exactly what was validated on the full corpus.
 | GET | `/api/calls/{sid}` | transcript (turns + timings), intent, mood + shift timestamp, resolution, summary, attention score, and every evidence citation |
 | GET | `/api/attention?limit=50` | calls ranked by needs-attention score |
 | GET | `/api/trends` | volume + resolution rate by issue |
-| GET | `/api/agents` | per-agent volume, handle time, outcomes |
+| GET | `/api/trends/timeline?days=7` | average attention score per recording day |
+| GET | `/api/agents` | per-agent volume, handle time, outcomes, clarification signal |
+| GET | `/api/stats` | corpus totals for the dashboard stat cards |
 | GET | `/audio/{sid}.mp3` | the recording (supports range requests → seeking) |
-| POST | `/api/upload` | ingest a `.zip` of new calls |
+| POST | `/api/upload` | queue a `.zip` of new calls → **202** with a job id |
+| GET | `/api/jobs/{id}` | that ingest job's progress |
+| GET | `/api/jobs?limit=20` | recent ingest jobs |
+
+### Uploads are asynchronous
+
+Transcribing one call costs ~30s of CPU, so a 100-call zip takes ~50 minutes — far too long
+to hold an HTTP request open. `POST /api/upload` therefore stores the zip, queues it, and
+returns a job id immediately; the dashboard polls `/api/jobs/{id}` and shows live
+`processed / total` progress. A single background worker processes calls one at a time
+(the Whisper model is a shared global and CPU is the bottleneck, so parallelism there would
+not help).
+
+Add `?wait=true` to process inline and get the finished job back in one response — handy
+for small uploads and scripted tests, not for large batches.
+
+Re-uploading calls that are already stored is cheap: they are **skipped**, not
+re-transcribed, and reported separately from newly ingested ones. Ingest failures are
+per-call — one unreadable recording never sinks the rest of the zip, and leaves no
+half-written row or orphan audio file behind.
 
 ## How the needs-attention score works
 
@@ -99,13 +123,34 @@ like fraud or a complaint (+15); long handle time (+8); poor line quality via `c
 (+6). Each call's per-factor breakdown is returned in `analysis_json.attention.reasons` and
 shown in the UI.
 
+**Thresholds are calibrated to the corpus.** The last two factors originally used generic
+call-centre numbers (>240s handle time, MOS ≤ 2.5) and *neither could ever fire* on this
+data — the longest call is 181s and the worst line quality is 3.0, so 14 points of the
+0–100 scale were dead while being advertised as live signals. They now default to
+`LONG_CALL_S=85` (p90 of handle time) and `POOR_MOS=3.0` (the worst tier actually present),
+overridable via `CALLRADAR_LONG_CALL_S` / `CALLRADAR_POOR_MOS`.
+
+`POOR_MOS` generalises to new data (it is a lower bound), but `LONG_CALL_S` is
+corpus-relative — on a corpus of ten-minute calls, 85s would flag nearly everything. After
+ingesting different data, run:
+
+```bash
+python -m backend.calibrate
+```
+
+It prints the recommended thresholds and warns when a factor never fires (dead weight) or
+fires on most calls (noise). Thresholds are deliberately *fixed* rather than computed live,
+so a call's score never drifts as unrelated calls are ingested.
+
 ## Project layout
 
 ```
 backend/
-  pipeline.py     channel split + Whisper transcription + metadata parsing
+  pipeline.py     channel split + Whisper transcription + turn splitting + name fixes
   analyze.py      intent / mood / resolution / summary + attention scoring + quote verify
   batch.py        ingest_one() — shared by the offline batch and the live upload
+  jobs.py         background ingest queue behind POST /api/upload
+  calibrate.py    prints attention thresholds recommended for the loaded corpus
   seed_demo.py    synthetic demo data (no audio/GPU/key needed)
   db.py           SQLite schema + queries
   api.py          FastAPI app, endpoints, audio + frontend serving
@@ -121,7 +166,8 @@ data/
 - **Storage:** SQLite. One file, trivial to reproduce, ample for 1,441 calls. Transcript
   and full evidence blob live in JSON columns; the judgments used for ranking and
   aggregation are real indexed columns.
-- **Analysis backends:** `heuristic` (deterministic, always available) and `anthropic`
-  (used automatically when `ANTHROPIC_API_KEY` is set). Both pass through the same
-  validation: quotes verified against the transcript, summary capped at 40 words, and the
-  attention score computed by the fixed formula above — never by the model.
+- **Analysis backends:** `heuristic` (deterministic, always available), `groq` (free tier,
+  console.groq.com), and `anthropic`. Auto-selects `groq` > `anthropic` > `heuristic` based
+  on which API key is set. All three pass through the same validation: quotes verified
+  against the transcript, summary capped at 40 words, and the attention score computed by
+  the fixed formula above — never by the model.

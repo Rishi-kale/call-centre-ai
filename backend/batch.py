@@ -10,9 +10,17 @@ from .config import AUDIO_DIR, META_DIR
 from . import pipeline, analyze, db
 
 
-def ingest_one(mp3_path: str, json_path: str, backend="auto") -> str:
+def ingest_one(mp3_path: str, json_path: str, backend="auto", force=False) -> str:
+    """Transcribe + analyse + store one call. Returns its sid.
+
+    Already-ingested calls are skipped unless force=True: transcription is the expensive
+    step (~30s of CPU each), so re-uploading a zip that overlaps what is already stored
+    must not redo that work.
+    """
     meta = pipeline.load_metadata(json_path)
     sid = meta["sid"]
+    if not force and db.get_call(sid):
+        return sid
     turns = pipeline.transcribe_call(mp3_path)
     result = analyze.analyze(turns, meta, backend=backend)
     row = {
@@ -63,6 +71,7 @@ if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--backend", default="auto", choices=["auto", "heuristic", "anthropic"])
+    ap.add_argument("--backend", default="auto",
+                    choices=["auto", "heuristic", "gemini", "groq", "anthropic"])
     a = ap.parse_args()
     run_batch(limit=a.limit, backend=a.backend)

@@ -10,8 +10,9 @@ Both pass through the SAME validation: quotes are verified against the transcrip
 the summary is capped at 40 words, and the attention score is computed by a fixed
 formula (never by the model) so it is explainable and defensible.
 """
-import json, re
-from .config import ANTHROPIC_API_KEY, ANALYSIS_MODEL
+import json, re, time
+from .config import (GEMINI_API_KEY, GEMINI_MODEL, GROQ_API_KEY, GROQ_MODEL,
+                    ANTHROPIC_API_KEY, ANALYSIS_MODEL, LONG_CALL_S, POOR_MOS)
 
 # ---------------------------------------------------------------------------
 # Lexicons for the heuristic backend
@@ -45,6 +46,27 @@ FOLLOWUP_CUES = ["call you back", "callback", "within 48 hours", "within 24 hour
                  "someone will call", "we'll be in touch", "log a case", "raise a ticket"]
 ESCALATE_CUES = ["escalate", "put you through", "transfer you", "my manager",
                  "complaints team", "senior"]
+CLARIFICATION_CUES = ["let me repeat", "i'll repeat", "just to repeat", "say that again",
+                      "one more time", "could you repeat", "can you repeat",
+                      "just to confirm", "just to clarify", "to clarify",
+                      "sorry, what was", "sorry, could you", "sorry, can you",
+                      "didn't catch that", "did not catch that", "come again",
+                      "could you say that", "can you say that", "what was that"]
+
+
+def clarification_count(turns):
+    """Count agent turns where the agent has to ask the caller to repeat/clarify
+    something. A rough proxy for 'had to ask three times' -- real signal, computed
+    from the actual transcript, not modelled."""
+    pats = [re.compile(r"\b" + re.escape(c)) for c in CLARIFICATION_CUES]
+    n = 0
+    for t in turns:
+        if t["speaker"] != "agent":
+            continue
+        low = t["text"].lower()
+        if any(p.search(low) for p in pats):
+            n += 1
+    return n
 
 
 def _caller_turns(turns):
@@ -145,9 +167,27 @@ LLM_PROMPT = """You are analysing one recorded bank support call. The transcript
 timestamped in seconds. Return ONLY JSON, no prose, matching exactly this shape:
 
 {{"intent":{{"label":"...","category":"one of: fraud_dispute|card_issue|payment_transfer|balance_account|loan_mortgage|app_login|complaint|general_enquiry","evidence":{{"t":<sec>,"quote":"<verbatim words>"}}}},
- "mood":{{"start_mood":"...","end_mood":"...","shifted":true|false,"shift":{{"t":<sec>,"quote":"<verbatim>"}}|null}},
+ "mood":{{"start_mood":"one of: positive|calm|concerned|frustrated","end_mood":"one of: positive|calm|concerned|frustrated","shifted":true|false,"shift":{{"t":<sec>,"quote":"<verbatim>"}}|null}},
  "resolution":{{"status":"resolved|unresolved|escalated|follow_up_promised","evidence":{{"t":<sec>,"quote":"<verbatim>"}}}},
  "summary":"<= 40 words"}}
+
+Resolution definitions -- judge by what actually happened, not by whether an explicit
+confirmation phrase like "resolved" or "sorted" was spoken:
+ - resolved: the agent directly addressed the caller's request/question on THIS call and
+   the caller ends the call satisfied or neutral (a plain "thanks, that's all, bye" close
+   after the agent answered them counts as resolved -- do not require an explicit
+   confirmation phrase).
+ - unresolved: the caller's issue is left unaddressed, still broken, or the caller ends
+   frustrated/unsatisfied.
+ - escalated: the agent transfers the caller or brings in a manager/senior/complaints team.
+ - follow_up_promised: the agent promises a callback or a future action instead of
+   resolving it on this call.
+
+Mood-shift definitions -- "shifted" must be a genuine change in the CALLER's emotional
+tone from a negative/neutral state toward frustration or away from it. A routine, matched
+pleasantry at the end of a call (e.g. the agent says "have a great day" and the caller
+replies "you too, bye") is NOT a mood shift -- only mark shifted=true when something in
+the call actually changes how the caller feels.
 
 Every quote MUST be copied verbatim from the transcript. Cite the moment that justifies
 each judgment. Transcript:
@@ -168,6 +208,71 @@ def anthropic_analysis(turns, meta):
                    "content": LLM_PROMPT.format(transcript=_format_transcript(turns))}],
     )
     text = "".join(b.text for b in msg.content if b.type == "text")
+    text = re.sub(r"^```json|```$", "", text.strip()).strip()
+    return json.loads(text)
+
+
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+
+def gemini_list_models(api_key=None):
+    """Model names change between releases -- ask the API what this key can actually use
+    rather than assuming. (A wrong model name is a 404 that would otherwise show up as a
+    silent heuristic fallback across a whole batch.)"""
+    import requests
+    key = api_key or GEMINI_API_KEY
+    r = requests.get("https://generativelanguage.googleapis.com/v1beta/models",
+                     params={"key": key}, timeout=30)
+    r.raise_for_status()
+    out = []
+    for m in r.json().get("models", []):
+        if "generateContent" in (m.get("supportedGenerationMethods") or []):
+            out.append(m["name"].removeprefix("models/"))
+    return out
+
+
+def gemini_analysis(turns, meta, model=None):
+    """Free-tier Google Gemini backend (aistudio.google.com). Same prompt/JSON contract as
+    the other LLM backends; responseMimeType pins the reply to JSON."""
+    import requests
+    body = {
+        "contents": [{"parts": [{"text": LLM_PROMPT.format(transcript=_format_transcript(turns))}]}],
+        # Gemini 3.x spends part of the output budget on internal reasoning, so a 1k cap
+        # truncates the JSON mid-string. Give it room.
+        "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": 4096},
+    }
+    url = GEMINI_URL.format(model=model or GEMINI_MODEL)
+    # The free tier limits requests per MINUTE (~15 RPM), so a 429 usually just means
+    # "slow down", not "quota gone". Wait out the window rather than giving up.
+    for attempt in range(4):
+        r = requests.post(url, params={"key": GEMINI_API_KEY}, json=body, timeout=60)
+        if r.status_code == 429 and attempt < 3:
+            wait = float(r.headers.get("Retry-After") or 0) or (12 * (attempt + 1))
+            time.sleep(min(wait, 45))
+            continue
+        if r.status_code == 503 and attempt < 3:      # transient overload
+            time.sleep(4 * (attempt + 1))
+            continue
+        break
+    r.raise_for_status()
+    data = r.json()
+    parts = data["candidates"][0]["content"]["parts"]
+    text = "".join(p.get("text", "") for p in parts).strip()
+    text = re.sub(r"^```json|```$", "", text).strip()
+    return json.loads(text)
+
+
+def groq_analysis(turns, meta, model=None):
+    """Free-tier LLM backend (console.groq.com), same prompt/JSON contract as Anthropic."""
+    from groq import Groq
+    client = Groq(api_key=GROQ_API_KEY)
+    msg = client.chat.completions.create(
+        model=model or GROQ_MODEL, max_tokens=1024,
+        response_format={"type": "json_object"},
+        messages=[{"role": "user",
+                   "content": LLM_PROMPT.format(transcript=_format_transcript(turns))}],
+    )
+    text = msg.choices[0].message.content
     text = re.sub(r"^```json|```$", "", text.strip()).strip()
     return json.loads(text)
 
@@ -198,6 +303,22 @@ def _verify_quote(turns, ev):
     return None                                   # unsupported -> drop it
 
 
+# Thresholds for the two "signal" factors below live in config (env-overridable).
+#
+# They were originally generic call-centre numbers (>240s handle time, MOS <= 2.5) and
+# BOTH were unreachable on this corpus: the longest call is 181s and the worst line
+# quality is 3.0, so neither factor ever fired across all 1,441 calls -- 14 points of the
+# 0-100 scale were dead while the README advertised them as live signals.
+#
+# Calibrated defaults:
+#   LONG_CALL_S = 85s  -> p90 of handle time, flags the longest ~10% (148 calls)
+#   POOR_MOS    = 3.0  -> the lowest quality tier that actually occurs (265 calls, 18%)
+#
+# POOR_MOS generalises (it is a lower bound -- genuinely bad lines still trip it), but
+# LONG_CALL_S is corpus-relative: on a corpus of 10-minute calls, 85s would flag almost
+# everything. Recalibrate it via CALLRADAR_LONG_CALL_S / `python -m backend.calibrate`.
+
+
 def _score_attention(analysis, meta, turns):
     """Deterministic 0-100 from explainable factors (never model-authored)."""
     reasons, score = [], 0
@@ -224,25 +345,76 @@ def _score_attention(analysis, meta, turns):
         reasons.append({"factor": f"high_stakes_{analysis['intent']['category']}", "weight": 15})
 
     ht = meta.get("handle_time_s") or 0
-    if ht and ht > 240:                          # long calls tend to mean trouble
+    if ht and ht > LONG_CALL_S:                  # long calls tend to mean trouble
         score += 8; reasons.append({"factor": "long_handle_time", "weight": 8})
 
     mos = meta.get("caller_mos")
-    if mos is not None and mos <= 2.5:           # poor line quality = frustrating call
+    if mos is not None and mos <= POOR_MOS:      # poor line quality = frustrating call
         score += 6; reasons.append({"factor": "poor_audio_quality", "weight": 6})
 
     return min(score, 100), reasons
 
 
-def analyze(turns, meta, backend="auto"):
+def _validate_shape(raw):
+    """The LLM backends occasionally return technically-valid JSON that's still missing
+    a required key (e.g. no "resolution" object at all). That's not an API exception, so
+    it slips past the retry loop unless we check for it explicitly -- raise here so a
+    malformed response gets retried/falls back exactly like any other backend failure."""
+    if not isinstance(raw, dict):
+        raise ValueError("analysis response was not a JSON object")
+    for key in ("intent", "mood", "resolution"):
+        if not isinstance(raw.get(key), dict):
+            raise ValueError(f"analysis response missing '{key}' object")
+    if "label" not in raw["intent"] or "category" not in raw["intent"]:
+        raise ValueError("intent missing label/category")
+    valid_moods = {"positive", "calm", "concerned", "frustrated"}
+    if raw["mood"].get("start_mood") not in valid_moods or raw["mood"].get("end_mood") not in valid_moods:
+        raise ValueError(f"mood not in {valid_moods}: {raw['mood']}")
+    if "status" not in raw["resolution"]:
+        raise ValueError("resolution missing status")
+    if not isinstance(raw.get("summary"), str):
+        raise ValueError("summary missing or not a string")
+
+
+def analyze(turns, meta, backend="auto", model=None):
     """Full analysis for one call. Returns a dict ready for the DB."""
     if backend == "auto":
-        backend = "anthropic" if ANTHROPIC_API_KEY else "heuristic"
-    try:
-        raw = anthropic_analysis(turns, meta) if backend == "anthropic" \
-            else heuristic_analysis(turns, meta)
-    except Exception:
-        raw = heuristic_analysis(turns, meta)     # never fail the batch on one call
+        backend = ("gemini" if GEMINI_API_KEY else "groq" if GROQ_API_KEY
+                   else "anthropic" if ANTHROPIC_API_KEY else "heuristic")
+
+    raw = None
+    used_backend = "heuristic"
+    if backend in ("gemini", "groq", "anthropic"):
+        if backend == "gemini":
+            fn = lambda t, m: gemini_analysis(t, m, model=model)
+        elif backend == "groq":
+            fn = lambda t, m: groq_analysis(t, m, model=model)
+        else:
+            fn = anthropic_analysis
+        last_err = None
+        for attempt in range(1, 4):            # a few retries survives free-tier rate limits
+            try:
+                raw = fn(turns, meta)
+                _validate_shape(raw)
+                used_backend = backend
+                break
+            except Exception as e:
+                raw = None
+                last_err = e
+                if attempt < 3:
+                    time.sleep(min(20, 2 ** attempt))
+        if raw is None:
+            # Never fail the batch on one call -- but a silent fallback here is exactly how a
+            # bad model name/API key can make an entire batch quietly run on the heuristic
+            # while everyone believes it used the LLM. Always surface it.
+            print(f"  [analyze] {backend} backend failed after retries ({last_err!r}); falling back to heuristic")
+    if raw is None:
+        raw = heuristic_analysis(turns, meta)
+    raw["backend_used"] = used_backend        # lets a re-run skip calls already done by an LLM
+    if used_backend == "gemini":
+        raw["model_used"] = model or GEMINI_MODEL
+    elif used_backend == "groq":
+        raw["model_used"] = model or GROQ_MODEL
 
     # normalise + verify every citation
     raw.setdefault("mood", {}).setdefault("shift", None)
@@ -256,6 +428,8 @@ def analyze(turns, meta, backend="auto"):
 
     score, reasons = _score_attention(raw, meta, turns)
     raw["attention"] = {"score": score, "reasons": reasons}
+    clarifications = clarification_count(turns)
+    raw["clarification_count"] = clarifications
 
     return {
         "intent_label": raw["intent"]["label"],
@@ -267,5 +441,6 @@ def analyze(turns, meta, backend="auto"):
         "resolution": raw["resolution"]["status"],
         "summary": raw["summary"],
         "attention": score,
+        "clarification_count": clarifications,
         "analysis_json": raw,
     }

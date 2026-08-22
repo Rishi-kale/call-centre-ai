@@ -8,7 +8,10 @@ faster-whisper>=1.0          # speech-to-text (CTranslate2 Whisper)
 soundfile>=0.12              # audio I/O for the demo-audio synthesiser
 numpy>=1.24
 
-# --- analysis (optional LLM backend) ---
+# --- analysis (optional LLM backends) ---
+requests>=2.31              # Gemini REST backend
+groq>=0.11                  # only used if GROQ_API_KEY is set (free tier)
 anthropic>=0.39             # only used if ANTHROPIC_API_KEY is set
+# Gemini needs no SDK -- it is called over REST with `requests` (GEMINI_API_KEY)
 
 # ffmpeg is required on the system PATH (apt install ffmpeg / brew install ffmpeg)
