@@ -17,19 +17,88 @@ from .config import (GEMINI_API_KEY, GEMINI_MODEL, GROQ_API_KEY, GROQ_MODEL,
 # ---------------------------------------------------------------------------
 # Lexicons for the heuristic backend
 # ---------------------------------------------------------------------------
-INTENT_RULES = [
-    ("fraud_dispute",     ["fraud", "unauthori", "didn't make", "don't recognise",
-                           "don't recognize", "stolen", "scam", "suspicious"]),
-    ("card_issue",        ["card", "declined", "blocked", "pin", "chip", "contactless"]),
-    ("payment_transfer",  ["transfer", "payment", "send money", "standing order",
-                           "direct debit", "bounced"]),
-    ("balance_account",   ["balance", "statement", "overdraft", "interest", "account number"]),
-    ("loan_mortgage",     ["loan", "mortgage", "repayment", "borrow", "credit limit"]),
-    ("app_login",         ["app", "log in", "login", "password", "reset", "locked out",
-                           "online banking", "website"]),
-    ("complaint",         ["complaint", "complain", "unacceptable", "terrible",
-                           "ridiculous", "manager"]),
+# ---------------------------------------------------------------------------
+# Intent taxonomy
+# ---------------------------------------------------------------------------
+# A fixed set of banking customer-service categories. `intent_cat` is ALWAYS one of
+# these; the model's own wording is kept separately in `intent_label` for detail.
+#
+# Why fixed: the LLM backends produced 194 distinct free-text labels for what is really a
+# handful of topics -- "payment_transfer", "transfer money between accounts" and
+# "transfer money" are one thing. Anything that groups, filters or trends has to key off a
+# stable enum, not prose.
+#
+# Why these ten: they are what this corpus actually contains. The previous 6-value set
+# had no bucket for checkbook orders, branch hours, appointments or bill payments, so all
+# four collapsed into general_enquiry -- 31% of calls in a bucket that said nothing.
+INTENT_CATEGORIES = [
+    "card_replacement",       # lost / stolen / damaged card -> replacement
+    "checkbook_request",      # order or re-order a checkbook
+    "balance_inquiry",        # what is my balance / statement
+    "funds_transfer",         # move money between accounts
+    "bill_payment",           # pay a bill to a third party
+    "password_reset",         # online banking / app access
+    "branch_info",            # branch hours, location
+    "appointment_scheduling", # book time with the bank
+    "fraud_dispute",          # fraud, unauthorised or disputed activity
+    "loan_mortgage",          # lending enquiries (standard for banking; absent here)
+    "general_enquiry",        # genuine catch-all
 ]
+
+# Ordered most-specific-first: the first match wins, which decides compound labels like
+# "Card Issue - Checkbook Replacement" (checkbook) and "request_checkbook_and_balance"
+# (checkbook). Keywords are matched against the label first, then the call text.
+INTENT_RULES = [
+    # dispute language beats the product it is about
+    ("fraud_dispute",         ["fraud", "unauthori", "dispute", "scam", "suspicious",
+                               "didn't make", "don't recognise", "don't recognize"]),
+    # deliberately specific: a bare "check" would swallow "check account balance"
+    ("checkbook_request",     ["checkbook", "check book", "checkbooks", "chequebook",
+                               "cheque book", "new checks", "check_book",
+                               "textbook"]),      # Whisper mishears "checkbook" as "textbook"
+    ("card_replacement",      ["card", "declined", "pin", "chip", "contactless"]),
+    ("password_reset",        ["password", "log in", "login", "logged out", "locked out",
+                               "online banking", "app_login", "app login", "website"]),
+    ("appointment_scheduling",["appointment", "schedule", "booking", "book a"]),
+    ("branch_info",           ["branch", "opening hours", "hours", "location", "address of"]),
+    ("funds_transfer",        ["transfer", "send money", "move money", "standing order",
+                               "direct debit"]),
+    ("bill_payment",          ["bill", "pay a bill", "pay my", "utility", "electric"]),
+    ("balance_inquiry",       ["balance", "statement", "overdraft", "how much do i have"]),
+    ("loan_mortgage",         ["loan", "mortgage", "repayment", "borrow", "credit limit"]),
+]
+
+# Legacy intent_cat values, kept so old rows normalise instead of falling to the catch-all.
+_LEGACY_CAT_MAP = {
+    "card_issue": "card_replacement",
+    "payment_transfer": "funds_transfer",
+    "balance_account": "balance_inquiry",
+    "app_login": "password_reset",
+    "complaint": "general_enquiry",
+    "fraud_dispute": "fraud_dispute",
+    "general_enquiry": "general_enquiry",
+    "loan_mortgage": "loan_mortgage",
+}
+
+
+def classify_intent(label="", text="", legacy_cat=None):
+    """Map any intent wording onto the fixed taxonomy.
+
+    Tries the model's label first (most precise), then the call text, then a legacy
+    intent_cat, and finally falls back to general_enquiry. Always returns a value from
+    INTENT_CATEGORIES.
+    """
+    if label and label in INTENT_CATEGORIES:
+        return label                                   # already canonical
+    for haystack in (str(label or "").lower(), str(text or "").lower()):
+        if not haystack:
+            continue
+        for cat, kws in INTENT_RULES:
+            if any(k in haystack for k in kws):
+                return cat
+    if legacy_cat:
+        return _LEGACY_CAT_MAP.get(legacy_cat, "general_enquiry")
+    return "general_enquiry"
 NEGATIVE = {"angry", "annoyed", "frustrated", "upset", "unacceptable", "ridiculous",
             "terrible", "awful", "furious", "disgusted", "waste", "useless",
             "again", "third time", "second time", "still not", "never", "not good enough",
@@ -166,7 +235,7 @@ def heuristic_analysis(turns, meta):
 LLM_PROMPT = """You are analysing one recorded bank support call. The transcript is
 timestamped in seconds. Return ONLY JSON, no prose, matching exactly this shape:
 
-{{"intent":{{"label":"...","category":"one of: fraud_dispute|card_issue|payment_transfer|balance_account|loan_mortgage|app_login|complaint|general_enquiry","evidence":{{"t":<sec>,"quote":"<verbatim words>"}}}},
+{{"intent":{{"label":"<short human phrase>","category":"one of: card_replacement|checkbook_request|balance_inquiry|funds_transfer|bill_payment|password_reset|branch_info|appointment_scheduling|fraud_dispute|loan_mortgage|general_enquiry","evidence":{{"t":<sec>,"quote":"<verbatim words>"}}}},
  "mood":{{"start_mood":"one of: positive|calm|concerned|frustrated","end_mood":"one of: positive|calm|concerned|frustrated","shifted":true|false,"shift":{{"t":<sec>,"quote":"<verbatim>"}}|null}},
  "resolution":{{"status":"resolved|unresolved|escalated|follow_up_promised","evidence":{{"t":<sec>,"quote":"<verbatim>"}}}},
  "summary":"<= 40 words"}}
@@ -323,11 +392,16 @@ def _score_attention(analysis, meta, turns):
     """Deterministic 0-100 from explainable factors (never model-authored)."""
     reasons, score = [], 0
     res = analysis["resolution"]["status"]
-    if res == "unresolved":
+    # An escalated call is unresolved *and* handed to another team with no closure, so it
+    # has to outrank a plain unresolved one. It previously scored +20 against unresolved's
+    # +30, which ranked the worse outcome lower.
+    if res == "escalated":
+        score += 35; reasons.append({"factor": "escalated", "weight": 35})
+    elif res == "unresolved":
         score += 30; reasons.append({"factor": "unresolved", "weight": 30})
-    elif res == "escalated":
-        score += 20; reasons.append({"factor": "escalated", "weight": 20})
     elif res == "follow_up_promised":
+        # not closed either, but a committed callback is a partial outcome, so it stays
+        # below the two above rather than being levelled with them
         score += 12; reasons.append({"factor": "follow_up_promised", "weight": 12})
 
     end_mood = analysis["mood"]["end_mood"]
@@ -340,9 +414,12 @@ def _score_attention(analysis, meta, turns):
         score += 12
         reasons.append({"factor": "mood_shift", "weight": 12, "t": sh.get("t")})
 
-    if analysis["intent"]["category"] in ("fraud_dispute", "complaint"):
+    # Only fraud/dispute counts as high-stakes. "complaint" used to be listed here but no
+    # longer exists in the taxonomy, and widening this to card_replacement would fire on
+    # ~14% of calls -- that turns the factor into background noise rather than a signal.
+    if analysis["intent"]["category"] == "fraud_dispute":
         score += 15
-        reasons.append({"factor": f"high_stakes_{analysis['intent']['category']}", "weight": 15})
+        reasons.append({"factor": "high_stakes_fraud_dispute", "weight": 15})
 
     ht = meta.get("handle_time_s") or 0
     if ht and ht > LONG_CALL_S:                  # long calls tend to mean trouble
@@ -415,6 +492,17 @@ def analyze(turns, meta, backend="auto", model=None):
         raw["model_used"] = model or GEMINI_MODEL
     elif used_backend == "groq":
         raw["model_used"] = model or GROQ_MODEL
+
+    # Pin the category onto the fixed taxonomy. Normalising beats rejecting: the models
+    # invent their own wording constantly (194 distinct labels across this corpus), and a
+    # descriptive label like "lost credit card replacement" is still perfectly
+    # classifiable. The model's own phrasing is preserved in intent.label.
+    raw.setdefault("intent", {})
+    raw["intent"]["category"] = classify_intent(
+        label=raw["intent"].get("category") or "",
+        text=raw["intent"].get("label") or "",
+        legacy_cat=raw["intent"].get("category"),
+    )
 
     # normalise + verify every citation
     raw.setdefault("mood", {}).setdefault("shift", None)

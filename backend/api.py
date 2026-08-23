@@ -2,7 +2,7 @@
 same pipeline. Serves the dashboard and the recordings (with range support so the
 player can seek to a cited timestamp)."""
 import asyncio
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from . import db
 from .config import AUDIO_DIR, FRONTEND_DIR
@@ -16,9 +16,29 @@ def _startup():
 
 
 # ---- dashboard views ------------------------------------------------------
+Page = Query(0, ge=0, description="0-indexed page number")
+Size = Query(db.DEFAULT_PAGE_SIZE, ge=1, le=db.MAX_PAGE_SIZE,
+             description=f"rows per page (max {db.MAX_PAGE_SIZE})")
+
+
+Order = Query("asc", pattern="^(asc|desc)$", description="asc | desc")
+
+
+def _check_sort(sort, allowed):
+    """Reject an unknown sort field rather than silently ignoring it -- a typo in a client
+    should surface, not quietly return default-ordered data."""
+    if sort and sort not in allowed:
+        raise HTTPException(400, f"sort must be one of: {', '.join(sorted(allowed))}")
+    return sort
+
+
 @app.get("/api/customers")
-def customers():
-    return db.list_customers()
+def customers(page: int = Page, size: int = Size, q: str | None = None,
+              sort: str | None = None, order: str = Order):
+    """Paged. Returns {content, page, size, totalElements, totalPages, first, last}.
+    Sortable by: name, calls, last_contact, attention."""
+    _check_sort(sort, db.CUSTOMER_SORTS)
+    return db.list_customers(page, size, q, sort, order)
 
 
 @app.get("/api/customers/{name}/calls")
@@ -34,9 +54,50 @@ def call(sid: str):
     return c
 
 
+@app.get("/api/calls/{sid}/context")
+def call_context(sid: str, limit: int = 12):
+    """Sibling calls for the call-detail view: this customer's other calls, and other
+    customers hitting the same issue."""
+    ctx = db.call_context(sid, limit)
+    if not ctx:
+        raise HTTPException(404, "call not found")
+    return ctx
+
+
+@app.get("/api/filters")
+def filters():
+    """Available filter values with counts, for the Needs Attention checkbox groups.
+    Returns {intents:[{value,n,unresolved}], resolutions:[{value,n}]}."""
+    return db.filter_facets()
+
+
 @app.get("/api/attention")
-def attention(limit: int = 50):
-    return db.attention_ranked(limit)
+def attention(page: int = Page, size: int = Size, q: str | None = None,
+              intent: list[str] | None = Query(None, description="repeatable; OR'd together"),
+              resolution: list[str] | None = Query(None, description="repeatable; OR'd together"),
+              sort: str | None = None, order: str = Order):
+    """Paged, worst score first. Same envelope as /api/customers.
+
+    Filters are repeatable query params: ?intent=app_login&intent=card_issue&resolution=unresolved
+    Values are validated against what /api/filters reports, so a stale or misspelled
+    filter fails loudly instead of silently returning everything.
+
+    Sortable by: score, customer, agent, mood, resolution. `q` matches customer name,
+    agent name, summary and intent.
+    """
+    _check_sort(sort, db.ATTENTION_SORTS)
+    if intent or resolution:
+        facets = db.filter_facets()
+        for name, got, allowed in (
+            ("intent", intent, {f["value"] for f in facets["intents"]}),
+            ("resolution", resolution, {f["value"] for f in facets["resolutions"]}),
+        ):
+            bad = sorted(set(got or []) - allowed)
+            if bad:
+                raise HTTPException(
+                    400, f"unknown {name} value(s): {', '.join(bad)}. "
+                         f"valid: {', '.join(sorted(allowed))}")
+    return db.attention_ranked(page, size, q, intent, resolution, sort, order)
 
 
 @app.get("/api/trends")
@@ -55,8 +116,12 @@ def stats():
 
 
 @app.get("/api/agents")
-def agents():
-    return db.agent_stats()
+def agents(page: int = Page, size: int = Size, q: str | None = None,
+           sort: str | None = None, order: str = Order):
+    """Paged, busiest agent first. Same envelope as /api/customers.
+    Sortable by: name, calls, score."""
+    _check_sort(sort, db.AGENT_SORTS)
+    return db.agent_stats(page, size, q, sort, order)
 
 
 # ---- audio (range requests handled by FileResponse -> player can seek) -----

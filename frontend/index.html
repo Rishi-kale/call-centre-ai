@@ -243,6 +243,13 @@
   .queue-head{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 10px}
   .queue-head h4{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .queue-count{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+  .queue-head-right{display:flex;align-items:baseline;gap:14px}
+  .qi-clear{all:unset;cursor:pointer;width:26px;height:26px;flex:0 0 26px;border-radius:7px;
+            display:flex;align-items:center;justify-content:center;color:var(--dim);
+            margin-left:4px;transition:background .12s,color .12s}
+  .qi-clear svg{width:14px;height:14px}
+  .qi-clear:hover{background:var(--crit-soft-bg);color:var(--crit-soft-fg)}
+  .qi-clear:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   .q-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:9px}
   .q-item-top{display:flex;align-items:center;gap:11px}
   .q-item .qi-icon{width:30px;height:30px;border-radius:8px;background:var(--panel-2);display:flex;
@@ -296,6 +303,125 @@
         align-items:center;gap:6px;font-weight:600}
   .back svg{width:13px;height:13px}
 
+  /* summary cell + tooltip */
+  .sum-cell{max-width:330px}
+  .sum-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+             overflow:hidden;cursor:help;border-radius:4px}
+  .sum-clamp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .tooltip{position:fixed;z-index:400;max-width:430px;background:var(--ink);color:var(--panel);
+           font-size:12.5px;line-height:1.5;padding:10px 13px;border-radius:8px;
+           box-shadow:var(--shadow);pointer-events:none;opacity:0;visibility:hidden;
+           transition:opacity .13s ease;top:0;left:0}
+  .tooltip.on{opacity:1;visibility:visible}
+  .tip-quote{display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding-top:8px;
+             border-top:1px solid color-mix(in srgb, var(--panel) 25%, transparent);
+             font-style:italic;opacity:.92}
+  .tip-t{font-family:var(--mono);font-style:normal;font-size:11px;flex:0 0 auto;
+         background:color-mix(in srgb, var(--panel) 18%, transparent);border-radius:4px;
+         padding:1px 6px}
+
+  /* resolution flag bar (on-page, not in the dropdown) */
+  .head-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .flagbar{display:inline-flex;background:var(--panel-2);border:1px solid var(--border);
+           border-radius:9px;padding:3px;gap:2px}
+  .flag{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+        padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;color:var(--muted);
+        text-transform:capitalize;transition:background .12s,color .12s}
+  .flag:hover{color:var(--ink)}
+  .flag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .flag.on{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:var(--shadow-sm)}
+  .flag-n{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .flag.on .flag-n{color:var(--accent)}
+
+  /* filter panel */
+  .filter-wrap{position:relative}
+  .filter-btn{display:inline-flex;align-items:center;gap:7px}
+  .filter-count{font-family:var(--mono);font-size:10.5px;font-weight:700;background:var(--accent);
+                color:#fff;border-radius:99px;padding:1px 7px;margin-left:2px}
+  .filter-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:30;
+                width:290px;max-height:60vh;overflow-y:auto;background:var(--panel);
+                border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);
+                padding:10px}
+  .filter-panel.open{display:block}
+  .filter-group + .filter-group{border-top:1px solid var(--border);margin-top:8px;padding-top:8px}
+  .filter-group-head{display:flex;align-items:baseline;justify-content:space-between;
+                     font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+                     text-transform:uppercase;color:var(--muted);padding:4px 8px 7px}
+  .filter-clear,.filter-clear-all{all:unset;cursor:pointer;color:var(--accent);
+                                  font-family:var(--sans);font-size:11px;letter-spacing:0;
+                                  text-transform:none}
+  .filter-clear:hover,.filter-clear-all:hover{text-decoration:underline}
+  .filter-clear-all{display:block;width:100%;text-align:center;padding:9px 0 4px;
+                    border-top:1px solid var(--border);margin-top:8px;font-size:12px}
+  .filter-row{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;
+              cursor:pointer;font-size:12.5px}
+  .filter-row:hover{background:var(--panel-2)}
+  .filter-row input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex:0 0 14px}
+  .filter-label{flex:1;color:var(--ink);text-transform:capitalize}
+  .filter-n{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .filter-empty{padding:14px;font-size:12.5px;color:var(--dim);text-align:center}
+  /* active-filter chips */
+  .chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+  .f-chip{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+          background:var(--accent-soft-bg);color:var(--accent-soft-fg);border-radius:99px;
+          padding:4px 10px;font-size:12px;text-transform:capitalize;
+          border:1px solid transparent;transition:border-color .12s}
+  .f-chip:hover{border-color:var(--accent)}
+  .f-chip-k{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+            opacity:.7}
+  .f-chip-x{font-size:14px;line-height:1;opacity:.7}
+
+  /* sortable headers */
+  th.th-sort{cursor:pointer;user-select:none;white-space:nowrap;transition:color .12s}
+  th.th-sort:hover{color:var(--accent)}
+  th.th-sort:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  th.th-sort.on{color:var(--accent)}
+  .th-arrow{margin-left:5px;font-size:9px;opacity:.45;font-family:var(--sans)}
+  th.th-sort.on .th-arrow{opacity:1}
+  th.th-sort:hover .th-arrow{opacity:.9}
+
+  /* pagination */
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+         padding:14px 4px 4px}
+  .pager-info{font-size:12.5px;color:var(--muted)}
+  .pager-info b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  .pager-nav{display:flex;align-items:center;gap:5px}
+  .pg{all:unset;cursor:pointer;min-width:31px;height:31px;padding:0 8px;border-radius:7px;
+      border:1px solid var(--border);background:var(--panel);color:var(--body);
+      font-family:var(--mono);font-size:12px;display:inline-flex;align-items:center;
+      justify-content:center;transition:border-color .12s,background .12s}
+  .pg:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .pg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .pg.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .pg:disabled{opacity:.42;cursor:default}
+  .pg-gap{color:var(--dim);font-family:var(--mono);font-size:12px;padding:0 2px}
+
+  /* sibling-call widgets */
+  .ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-top:2px}
+  @media(max-width:980px){.ctx-grid{grid-template-columns:1fr}}
+  .ctx-stats{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);
+             padding-bottom:11px;border-bottom:1px solid var(--border);margin-bottom:4px}
+  .ctx-stats b{font-family:var(--mono);color:var(--ink);font-weight:700}
+  .ctx-note{font-size:12.5px;color:var(--muted);padding:9px 0 4px;line-height:1.5}
+  .ctx-flag{display:flex;gap:9px;align-items:flex-start;background:var(--hot-soft-bg);
+            border:1px solid var(--hot-soft-fg);border-radius:8px;padding:10px 12px;
+            font-size:12.5px;color:var(--ink);line-height:1.5;margin-bottom:12px}
+  .ctx-flag svg{width:15px;height:15px;flex:0 0 15px;color:var(--hot-soft-fg);margin-top:2px}
+  .ctx-list{display:flex;flex-direction:column;max-height:392px;overflow-y:auto;
+            margin:0 -6px;padding:0 6px}
+  .ctx-row{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;
+           padding:11px 8px;border-top:1px solid var(--border);cursor:pointer;
+           border-radius:7px;transition:background .12s}
+  .ctx-row:first-child{border-top:none}
+  .ctx-row:hover{background:var(--panel-2)}
+  .ctx-row .score{min-width:34px;font-size:12px;padding:4px 0}
+  .ctx-mid{min-width:0}
+  .ctx-head{font-size:13px;font-weight:600;color:var(--ink)}
+  .ctx-dim{color:var(--dim);font-weight:400}
+  .ctx-sum{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45;
+           display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ctx-tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center}
+  .ctx-empty{color:var(--dim);font-size:12.5px;padding:20px 0;text-align:center}
   .empty{color:var(--dim);padding:50px;text-align:center;font-size:13.5px}
   .spinner{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
            border-top-color:var(--accent);animation:spin .7s linear infinite;margin:40px auto}
@@ -377,6 +503,9 @@ const ICONS = {
   search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>`,
   filter: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4 4 20 4 14 12.5 14 19 10 21 10 12.5 4 4"/></svg>`,
   chev: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  chevL: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="9 18 15 12 9 6"/></svg>`,
   bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
   users2: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   trend: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg>`,
@@ -430,9 +559,12 @@ function hashName(name){ let h=0; for(const ch of (name||"")) h=(h*31+ch.charCod
 function avatarClass(name){ return "av-"+(hashName(name)%8); }
 function pseudoId(prefix,name){ return prefix+"-"+String(hashName(name)%100000).padStart(5,"0"); }
 
+// Wording matches what the server actually searches -- transcript text and "skills" are
+// not indexed, so promising them in the placeholder would be a lie.
 const SEARCH_PLACEHOLDERS = {
-  attention:"Search transcripts, customers, agents...", customers:"Search customer names or IDs...",
-  trends:"Search trends...", agents:"Search agents, skills...", upload:"Search...",
+  attention:"Search customer, agent, summary or intent...",
+  customers:"Search customer names...",
+  trends:"Search trends...", agents:"Search agent names...", upload:"Search...",
   customer:"Search this customer's calls...",
 };
 function setSearchPlaceholder(){ $("#globalSearch").placeholder = SEARCH_PLACEHOLDERS[state.view] || "Search..."; }
@@ -531,38 +663,339 @@ function lineChart(data, w=380, h=230){
   </svg>`;
 }
 
+/* ---------- server-side pagination ---------- */
+const PAGE_SIZE = 20;
+const pageState = { attention:0, customers:0, agents:0 };
+
+/** Corpus-wide totals for the stat cards. They do not change while paging, so fetch once
+ *  and reuse; handleUploadFile clears state.cache when new calls are ingested. */
+async function getStats(){
+  if(!state.cache.stats) state.cache.stats = await get("/api/stats");
+  return state.cache.stats;
+}
+
+// current sort per view; null field = server default ordering
+const sortState = { attention:{field:null,dir:"asc"},
+                    customers:{field:null,dir:"asc"}, agents:{field:null,dir:"asc"} };
+// active filters on Needs Attention; empty set = no constraint on that facet
+const filterState = { intents:new Set(), resolutions:new Set() };
+const activeFilterCount = ()=> filterState.intents.size + filterState.resolutions.size;
+
+function pageQuery(view, extra=""){
+  const q = ($("#globalSearch").value||"").trim();
+  const s = sortState[view];
+  let out = `?page=${pageState[view]}&size=${PAGE_SIZE}`
+    + (q ? `&q=${encodeURIComponent(q)}` : "")
+    + (s && s.field ? `&sort=${s.field}&order=${s.dir}` : "");
+  if(view === "attention"){
+    // repeatable params -- ?intent=a&intent=b, OR'd server-side
+    filterState.intents.forEach(v => out += `&intent=${encodeURIComponent(v)}`);
+    filterState.resolutions.forEach(v => out += `&resolution=${encodeURIComponent(v)}`);
+  }
+  return out + extra;
+}
+
+const prettyCat = v => v.replace(/_/g," ");
+
+/* ---------- tooltip ----------
+   One shared node on <body>, positioned fixed. It cannot live inside the table: the
+   .table-card clips overflow, so an absolutely-positioned tooltip would be cut off at
+   the card edge. */
+let _tipEl = null, _tipTarget = null, _tipText = "";
+function _tip(){
+  if(!_tipEl){ _tipEl = el("div","tooltip"); document.body.appendChild(_tipEl); }
+  return _tipEl;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/** `content` is either a plain string or {summary, t, quote} -- the quote being the
+ *  transcript line the judgment cites, so the full evidence reads in one hover. */
+function showTip(target, content){
+  if(!content) return;
+  _tipTarget = target; _tipText = content;
+  const t = _tip();
+  if(typeof content === "string"){
+    t.innerHTML = `<div class="tip-sum">${esc(content)}</div>`;
+  } else {
+    t.innerHTML = `<div class="tip-sum">${esc(content.summary)}</div>`
+      + (content.quote
+          ? `<div class="tip-quote"><span class="tip-t">${fmtT(content.t)}</span>`
+            + `<span>&ldquo;${esc(content.quote)}&rdquo;</span></div>`
+          : "");
+  }
+  t.classList.add("on");
+  const r = target.getBoundingClientRect();
+  const tr = t.getBoundingClientRect();
+  const margin = 8;
+  // prefer above; flip below when there is not enough headroom
+  let top = r.top - tr.height - margin;
+  if(top < margin) top = r.bottom + margin;
+  let left = r.left + r.width/2 - tr.width/2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - tr.width - margin));
+  t.style.top = `${top}px`;
+  t.style.left = `${left}px`;
+}
+function hideTip(){
+  _tipTarget = null; _tipText = "";
+  if(_tipEl) _tipEl.classList.remove("on");
+}
+/** Show `content` on hover/focus of `node`. Keyboard-reachable, so the full summary is
+ *  not mouse-only. */
+function attachTooltip(node, content){
+  if(!content) return node;
+  node.tabIndex = 0;
+  node.addEventListener("mouseenter", ()=>showTip(node, content));
+  node.addEventListener("focus",      ()=>showTip(node, content));
+  node.addEventListener("mouseleave", hideTip);
+  node.addEventListener("blur",       hideTip);
+  return node;
+}
+// Reposition on scroll rather than hide, so the tooltip stays anchored to its row
+// instead of flickering away on a trackpad nudge.
+let _tipRaf = null;
+window.addEventListener("scroll", ()=>{
+  if(!_tipTarget) return;
+  if(_tipRaf) cancelAnimationFrame(_tipRaf);
+  _tipRaf = requestAnimationFrame(()=>{
+    if(_tipTarget) showTip(_tipTarget, _tipText);
+  });
+}, true);
+
+/** Resolution flag, shown directly on the page rather than buried in the filter panel --
+ *  it is the coarsest, most-used cut of the list, so it should be one click away.
+ *  Values come from the facets, so a corpus with escalated / follow-up calls gets those
+ *  buttons too. Toggling is multi-select; "All" is simply the empty selection. */
+async function buildResolutionFlags(reload){
+  const wrap = el("div","flagbar");
+  let facets;
+  try {
+    if(!state.cache.facets) state.cache.facets = await get("/api/filters");
+    facets = state.cache.facets;
+  } catch(e){ return wrap; }
+
+  const draw = ()=>{
+    wrap.innerHTML = "";
+    const set = filterState.resolutions;
+    const mk = (label, count, activeWhen, onClick)=>{
+      const b = el("button","flag"+(activeWhen?" on":""),
+        `${label}${count!=null?`<span class="flag-n">${count.toLocaleString()}</span>`:""}`);
+      b.onclick = ()=>{ onClick(); pageState.attention = 0; draw(); reload(); };
+      return b;
+    };
+    wrap.appendChild(mk("All", null, set.size === 0, ()=> set.clear()));
+    facets.resolutions.forEach(r=>{
+      wrap.appendChild(mk(prettyCat(r.value), r.n, set.has(r.value),
+        ()=> set.has(r.value) ? set.delete(r.value) : set.add(r.value)));
+    });
+  };
+  draw();
+  return wrap;
+}
+
+/** Filter panel for Needs Attention: intent checkboxes, counts from /api/filters. */
+async function buildFilterPanel(reload){
+  const wrap = el("div","filter-wrap");
+  const btn = el("button","btn filter-btn");
+  btn.id = "intentFilterBtn";
+  const paint = ()=>{
+    const n = filterState.intents.size;      // resolution has its own on-page control
+    btn.innerHTML = `${ICONS.filter}<span>Intent</span>`
+      + (n ? `<span class="filter-count">${n}</span>` : "");
+  };
+  paint();
+  const panel = el("div","filter-panel");
+  wrap.appendChild(btn); wrap.appendChild(panel);
+  btn.onclick = (e)=>{ e.stopPropagation(); panel.classList.toggle("open"); };
+  panel.onclick = (e)=> e.stopPropagation();
+  document.addEventListener("click", ()=> panel.classList.remove("open"));
+
+  // facet counts only change when calls are ingested, and handleUploadFile clears the
+  // cache -- so this survives view rebuilds without refetching
+  let facets;
+  try {
+    if(!state.cache.facets) state.cache.facets = await get("/api/filters");
+    facets = state.cache.facets;
+  }
+  catch(e){ panel.appendChild(el("div","filter-empty","Could not load filters.")); return wrap; }
+
+  const group = (title, items, set, labelFn)=>{
+    const g = el("div","filter-group");
+    const head = el("div","filter-group-head");
+    head.appendChild(el("span",null,title));
+    const clear = el("button","filter-clear","Clear");
+    clear.onclick = ()=>{ set.clear(); rerender(); };
+    head.appendChild(clear);
+    g.appendChild(head);
+    items.forEach(it=>{
+      const row = el("label","filter-row");
+      const cb = el("input"); cb.type="checkbox"; cb.checked = set.has(it.value);
+      cb.onchange = ()=>{ cb.checked ? set.add(it.value) : set.delete(it.value); rerender(); };
+      row.appendChild(cb);
+      row.appendChild(el("span","filter-label", labelFn(it)));
+      row.appendChild(el("span","filter-n", String(it.n)));
+      g.appendChild(row);
+    });
+    return g;
+  };
+
+  function rerender(){
+    pageState.attention = 0;      // a changed filter invalidates the current page
+    paint();
+    draw();
+    reload();
+  }
+  function draw(){
+    panel.innerHTML = "";
+    // resolution lives on the page as a flag bar, so this panel is intent only
+    panel.appendChild(group("Intent", facets.intents, filterState.intents,
+      it => prettyCat(it.value)));
+    if(filterState.intents.size){
+      const all = el("button","filter-clear-all","Clear intent filters");
+      all.onclick = ()=>{ filterState.intents.clear(); rerender(); };
+      panel.appendChild(all);
+    }
+  }
+  draw();
+  return wrap;
+}
+
+/** Sortable <th>. Clicking toggles asc/desc, a third click clears back to the server
+ *  default, and any sort change returns to page 0 -- staying on page 5 of a different
+ *  ordering would show unrelated rows. */
+function sortableHead(label, field, view, reload, opts={}){
+  const s = sortState[view];
+  const active = s.field === field;
+  const arrow = active ? (s.dir === "asc" ? "▲" : "▼") : "";
+  const th = el("th", "th-sort" + (active ? " on" : ""),
+    `<span>${label}</span><span class="th-arrow">${arrow || "↕"}</span>`);
+  th.tabIndex = 0;
+  th.title = `Sort by ${label.toLowerCase()}`;
+  const apply = ()=>{
+    if(!active)            { s.field = field; s.dir = opts.firstDir || "asc"; }
+    else if(s.dir === (opts.firstDir || "asc")) { s.dir = s.dir === "asc" ? "desc" : "asc"; }
+    else                   { s.field = null; s.dir = "asc"; }   // third click: back to default
+    pageState[view] = 0;
+    reload();
+  };
+  th.onclick = apply;
+  th.onkeydown = (e)=>{ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); apply(); } };
+  return th;
+}
+
+function headRow(cells){
+  const tr = el("tr");
+  cells.forEach(c => tr.appendChild(typeof c === "string" ? el("th", null, c) : c));
+  return tr;
+}
+
+/** Pager bar: range summary + windowed page buttons. `reload` re-fetches the view. */
+function pager(p, view, reload){
+  const bar=el("div","pager");
+  const from = p.totalElements ? p.page*p.size + 1 : 0;
+  const to = p.page*p.size + p.numberOfElements;
+  bar.appendChild(el("div","pager-info",
+    `Showing <b>${from.toLocaleString()}–${to.toLocaleString()}</b> of <b>${p.totalElements.toLocaleString()}</b>`));
+  const nav=el("div","pager-nav");
+  const btn=(label,target,disabled,current)=>{
+    const b=el("button","pg"+(current?" on":""),label);
+    if(disabled||current){ b.disabled=true; } else { b.onclick=()=>{ pageState[view]=target; reload(); }; }
+    return b;
+  };
+  nav.appendChild(btn(ICONS.chevL, p.page-1, p.first));
+  // window of at most 5 page numbers around the current page
+  const last=p.totalPages-1;
+  let start=Math.max(0, Math.min(p.page-2, last-4)), end=Math.min(last, start+4);
+  if(start>0){ nav.appendChild(btn("1",0,false,p.page===0)); if(start>1) nav.appendChild(el("span","pg-gap","…")); }
+  for(let i=start;i<=end;i++) nav.appendChild(btn(String(i+1), i, false, i===p.page));
+  if(end<last){ if(end<last-1) nav.appendChild(el("span","pg-gap","…")); nav.appendChild(btn(String(last+1), last, false, p.page===last)); }
+  nav.appendChild(btn(ICONS.chevR, p.page+1, p.last));
+  bar.appendChild(nav);
+  return bar;
+}
+
 /* ---------- views ---------- */
 async function viewAttention(){
   const m=freshMain();
-  m.appendChild(el("div","page-head",`<div><h2>Needs Attention Today</h2>
-    <div class="note">Calls prioritized by attention score (0-100).</div></div>`));
+  const head=el("div","page-head");
+  head.appendChild(el("div",null,`<h2>Needs Attention Today</h2>
+    <div class="note">Calls prioritized by attention score (0-100).</div>`));
+  m.appendChild(head);
   const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
-  const rows=await get("/api/attention?limit=100");
-  state.cache.attention = rows;
-  renderAttentionTable(body, rows);
+  state.reloadPage = ()=>loadAttentionPage(body);
+  const controls=el("div","head-controls");
+  controls.appendChild(await buildResolutionFlags(()=>loadAttentionPage(body)));
+  controls.appendChild(await buildFilterPanel(()=>loadAttentionPage(body)));
+  head.appendChild(controls);
+  await loadAttentionPage(body);
 }
-function renderAttentionTable(body, rows){
-  const q=($("#globalSearch").value||"").toLowerCase();
-  const filtered = q ? rows.filter(r=>[r.customer_name,r.agent_name,r.summary,r.intent_label].join(" ").toLowerCase().includes(q)) : rows;
+// Paging re-renders only the table -- the surrounding chrome does not change, so there is
+// no reason to rebuild the page (or refetch /api/stats) to turn a page.
+async function loadAttentionPage(body){
+  const p=await get("/api/attention"+pageQuery("attention"));
+  renderAttentionTable(body, p);
+}
+function renderAttentionTable(body, p){
+  const rows=p.content||[];
   body.innerHTML="";
-  if(!filtered.length){ body.appendChild(el("div","empty", rows.length?"No matches.":"No calls yet. Use Bulk Upload to ingest recordings.")); return; }
+
+  // active intent filters as removable chips -- resolution is not chipped because the
+  // flag bar above already shows it, and two controls for one filter invites confusion
+  if(filterState.intents.size){
+    const chips=el("div","chip-row");
+    filterState.intents.forEach(val=>{
+      const c=el("button","f-chip",
+        `<span class="f-chip-k">intent</span>${prettyCat(val)}<span class="f-chip-x">×</span>`);
+      c.title=`Remove intent filter: ${prettyCat(val)}`;
+      // route() rebuilds the view so the Intent button's count and the panel's
+      // checkboxes stay in step with the chips
+      c.onclick=()=>{ filterState.intents.delete(val); pageState.attention=0; route(); };
+      chips.appendChild(c);
+    });
+    body.appendChild(chips);
+  }
+
+  if(!rows.length){
+    const q=($("#globalSearch").value||"").trim();
+    body.appendChild(el("div","empty",
+      activeFilterCount() ? "No calls match these filters."
+      : q ? "No matches." : "No calls yet. Use Bulk Upload to ingest recordings."));
+    return;
+  }
   const card=el("div","table-card"); const tbl=el("table");
-  tbl.innerHTML="<tr><th>Score</th><th>Customer</th><th>Agent</th><th>Summary</th><th>Resolution</th><th>Mood</th><th>Intent</th><th>Action</th></tr>";
-  filtered.forEach(r=>{
+  const reload=()=>loadAttentionPage(body);
+  tbl.appendChild(headRow([
+    sortableHead("Score", "score", "attention", reload, {firstDir:"desc"}),
+    sortableHead("Customer", "customer", "attention", reload),
+    sortableHead("Agent", "agent", "attention", reload),
+    "Summary",
+    sortableHead("Resolution", "resolution", "attention", reload),
+    sortableHead("Mood", "mood", "attention", reload, {firstDir:"desc"}),
+    "Intent",
+    "Action",
+  ]));
+  rows.forEach(r=>{
     const tr=el("tr");
     tr.innerHTML=`<td>${scoreBadge(r.attention)}</td>
       <td><b style="color:var(--ink)">${r.customer_name}</b></td>
       <td>Agent ${r.agent_name}</td>
-      <td style="max-width:320px"><div>${r.summary||""}</div>${evInline(r.shift_t, r.shift_quote)}</td>
+      <td class="sum-cell"><div class="sum-clamp">${r.summary||""}</div>${evInline(r.shift_t, r.shift_quote)}</td>
       <td>${resPill(r.resolution)}</td>
       <td>${moodText(r.end_mood)}</td>
       <td>${r.intent_label}</td>
       <td><button class="action-btn" title="Open call">${ICONS.extLink}</button></td>`;
+    // summaries are clamped to keep rows uniform; the tooltip carries the full text plus
+    // the transcript line the judgment cites
+    const clamp = tr.querySelector(".sum-clamp");
+    if(clamp && r.summary){
+      attachTooltip(clamp, {summary: r.summary, t: r.shift_t, quote: r.shift_quote});
+    }
     tr.onclick=()=>openCall(r.sid);
     wireSeekChips(tr, r.sid);
     tbl.appendChild(tr);
   });
   card.appendChild(tbl); body.appendChild(card);
+  body.appendChild(pager(p, "attention", ()=>loadAttentionPage(body)));
 }
 
 async function viewCustomers(){
@@ -570,25 +1003,39 @@ async function viewCustomers(){
   m.appendChild(el("div","page-head",`<div><h2>Customers</h2>
     <div class="note">Monitoring active customer accounts and attention scores.</div></div>
     <button class="btn" id="exportBtn">${ICONS.upload}<span>Export</span></button>`));
-  const [stats, cs] = await Promise.all([get("/api/stats"), get("/api/customers")]);
-  state.cache.customers = cs; state.cache.stats = stats;
+  const stats = await getStats();
   m.appendChild(statCards([
     {label:"Total Customers Monitored", value: stats.total_customers},
     {label:"Critical Attention Needed", value: stats.critical_customers, tone:"warn"},
     {label:"Calls (latest day)", value: stats.calls_latest_day},
     {label:"System Status", value:"Operational", status:true},
   ]));
-  const body=el("div"); m.appendChild(body);
-  renderCustomersTable(body, cs, stats.latest_ms);
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+  state.reloadPage = ()=>loadCustomersPage(body);
+  await loadCustomersPage(body);
 }
-function renderCustomersTable(body, cs, latestMs){
-  const q=($("#globalSearch").value||"").toLowerCase();
-  const filtered = q ? cs.filter(c=>c.customer_name.toLowerCase().includes(q)) : cs;
+async function loadCustomersPage(body){
+  const p=await get("/api/customers"+pageQuery("customers"));
+  renderCustomersTable(body, p, (state.cache.stats||{}).latest_ms);
+}
+function renderCustomersTable(body, p, latestMs){
+  const rows=p.content||[];
   body.innerHTML="";
-  if(!filtered.length){ body.appendChild(el("div","empty", cs.length?"No matches.":"No customers yet.")); return; }
+  if(!rows.length){
+    body.appendChild(el("div","empty", ($("#globalSearch").value||"").trim()
+      ? "No matches." : "No customers yet."));
+    return;
+  }
   const card=el("div","table-card"); const tbl=el("table");
-  tbl.innerHTML="<tr><th>Customer Name & ID</th><th>Total Calls</th><th>Worst Attention Score</th><th>Last Contact</th><th>Actions</th></tr>";
-  filtered.forEach(c=>{
+  const reload=()=>loadCustomersPage(body);
+  tbl.appendChild(headRow([
+    sortableHead("Customer Name & ID", "name", "customers", reload),
+    sortableHead("Total Calls", "calls", "customers", reload, {firstDir:"desc"}),
+    sortableHead("Worst Attention Score", "attention", "customers", reload, {firstDir:"desc"}),
+    sortableHead("Last Contact", "last_contact", "customers", reload, {firstDir:"desc"}),
+    "Actions",
+  ]));
+  rows.forEach(c=>{
     const sev=sevOf(c.max_attention||0);
     const daysAgo = latestMs ? Math.max(0, Math.round((latestMs - c.last_ms)/86400000)) : null;
     const lastContact = daysAgo==null ? "—" : daysAgo===0 ? "Today" : daysAgo===1 ? "1 day ago" : `${daysAgo} days ago`;
@@ -606,6 +1053,7 @@ function renderCustomersTable(body, cs, latestMs){
     tbl.appendChild(tr);
   });
   card.appendChild(tbl); body.appendChild(card);
+  body.appendChild(pager(p, "customers", ()=>loadCustomersPage(body)));
 }
 
 async function viewCustomer(){
@@ -702,26 +1150,40 @@ async function viewAgents(){
   m.appendChild(el("div","page-head",`<div><h2>Agent Performance</h2>
     <div class="note">Volume, handle time, resolution outcomes, and clarification signals per agent.</div></div>
     <button class="btn">${ICONS.upload}<span>Export</span></button>`));
-  const [stats, agents] = await Promise.all([get("/api/stats"), get("/api/agents")]);
-  state.cache.agents = agents;
+  const stats = await getStats();
   m.appendChild(statCards([
     {label:"Total Agents", value: stats.total_agents},
     {label:"High Risk", value: stats.high_risk_agents, tone:"warn"},
     {label:"Avg Handle Time", value: fmtT(stats.avg_handle_s)},
     {label:"System Status", value:"Operational", status:true},
   ]));
-  const body=el("div"); m.appendChild(body);
-  renderAgentsTable(body, agents);
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+  state.reloadPage = ()=>loadAgentsPage(body);
+  await loadAgentsPage(body);
 }
-function renderAgentsTable(body, agents){
-  const q=($("#globalSearch").value||"").toLowerCase();
-  const filtered = q ? agents.filter(a=>a.agent_name.toLowerCase().includes(q)) : agents;
+async function loadAgentsPage(body){
+  const p=await get("/api/agents"+pageQuery("agents"));
+  renderAgentsTable(body, p);
+}
+function renderAgentsTable(body, p){
+  const rows=p.content||[];
   body.innerHTML="";
-  if(!filtered.length){ body.appendChild(el("div","empty", agents.length?"No matches.":"No agents yet.")); return; }
+  if(!rows.length){
+    body.appendChild(el("div","empty", ($("#globalSearch").value||"").trim()
+      ? "No matches." : "No agents yet."));
+    return;
+  }
   const card=el("div","table-card"); const tbl=el("table");
-  tbl.innerHTML=`<tr><th>Agent Name & ID</th><th>Call Volume</th><th>Avg Handle Time</th><th>Resolution Rate</th>
-    <th>Avg Attention Score</th><th>Clarification Signal <span title="How often the agent had to repeat or rephrase a question in the same call, relative to peers">${ICONS.info}</span></th></tr>`;
-  filtered.forEach(a=>{
+  const reload=()=>loadAgentsPage(body);
+  tbl.appendChild(headRow([
+    sortableHead("Agent Name & ID", "name", "agents", reload),
+    sortableHead("Call Volume", "calls", "agents", reload, {firstDir:"desc"}),
+    "Avg Handle Time",
+    "Resolution Rate",
+    sortableHead("Avg Attention Score", "score", "agents", reload, {firstDir:"desc"}),
+    el("th",null,`Clarification Signal <span title="How often the agent had to repeat or rephrase a question in the same call, relative to peers">${ICONS.info}</span>`),
+  ]));
+  rows.forEach(a=>{
     const sev = sevOf(a.avg_attention||0);
     const okwarn = a.avg_attention>=50 ? '<span class="pill solid sev-hot">WARN</span>' : '<span class="pill sev-ok">OK</span>';
     const resPct = Math.round(100*a.resolved/a.calls);
@@ -740,6 +1202,7 @@ function renderAgentsTable(body, agents){
     tbl.appendChild(tr);
   });
   card.appendChild(tbl); body.appendChild(card);
+  body.appendChild(pager(p, "agents", ()=>loadAgentsPage(body)));
 }
 
 /* ---------- bulk upload ---------- */
@@ -763,13 +1226,36 @@ function viewUpload(){
   card.appendChild(dz); m.appendChild(card);
 
   const qHead=el("div","queue-head");
-  qHead.innerHTML=`<h4>Upload Queue</h4><span class="queue-count">${state.uploads.length} file${state.uploads.length===1?"":"s"}</span>`;
+  qHead.innerHTML=`<h4>Upload Queue</h4>`;
+  const right=el("div","queue-head-right");
+  const clearDone=el("button","filter-clear","Clear finished");
+  clearDone.onclick=()=>{
+    state.uploads = state.uploads.filter(u => u.status === "processing");
+    renderUploadQueue($("#uploadList"));
+  };
+  right.appendChild(clearDone);
+  right.appendChild(el("span","queue-count",
+    `${state.uploads.length} file${state.uploads.length===1?"":"s"}`));
+  qHead.appendChild(right);
   m.appendChild(qHead);
   const list=el("div"); list.id="uploadList"; m.appendChild(list);
   renderUploadQueue(list);
 }
+/** Drop one finished entry from the queue. In-flight uploads are not clearable: the
+ *  server keeps processing regardless, so removing the row would just hide work that is
+ *  still happening. */
+function clearUpload(entry){
+  state.uploads = state.uploads.filter(u => u !== entry);
+  const list = $("#uploadList");
+  if(list) renderUploadQueue(list);
+}
+function syncQueueCount(){
+  const cnt = $(".queue-count");
+  if(cnt) cnt.textContent = `${state.uploads.length} file${state.uploads.length===1?"":"s"}`;
+}
 function renderUploadQueue(list){
   list.innerHTML="";
+  syncQueueCount();
   if(!state.uploads.length){ list.appendChild(el("div","empty","No uploads yet in this session.")); return; }
   [...state.uploads].reverse().forEach(u=>{
     const item=el("div","q-item");
@@ -780,6 +1266,12 @@ function renderUploadQueue(list){
     top.innerHTML=`<div class="qi-icon">${ICONS.file}</div><div class="qi-name">${u.name}</div>
       <div class="qi-status ${u.status==='processing'?'processing':u.status==='done'?'ok':'err'}">
         ${u.status==='processing'?busyLabel:u.status==='done'?doneLabel:'Failed'}</div>`;
+    if(u.status!=="processing"){
+      const x=el("button","qi-clear",ICONS.x);
+      x.title="Clear from queue"; x.setAttribute("aria-label",`Clear ${u.name} from queue`);
+      x.onclick=(e)=>{ e.stopPropagation(); clearUpload(u); };
+      top.appendChild(x);
+    }
     item.appendChild(top);
     if(u.status==="processing"){
       const bar=el("div","qi-bar");
@@ -946,6 +1438,81 @@ async function openCall(sid, seekTo){
   ac.appendChild(ul); right.appendChild(ac);
 
   grid.appendChild(left); grid.appendChild(right); m.appendChild(grid);
+
+  // ---- sibling-call widgets: where does a manager go from here? ----
+  const ctxWrap = el("div","ctx-grid"); m.appendChild(ctxWrap);
+  renderCallContext(ctxWrap, sid, c);
+}
+
+/* ---------- sibling-call widgets on the call detail view ---------- */
+function ctxRow(r, opts={}){
+  const row=el("div","ctx-row");
+  row.appendChild(el("div","score sev-"+sevOf(r.attention), String(r.attention)));
+  const mid=el("div","ctx-mid");
+  const head = opts.showCustomer ? r.customer_name : new Date(r.start_ms).toLocaleDateString();
+  mid.appendChild(el("div","ctx-head",
+    `${head} <span class="ctx-dim">· ${opts.showCustomer ? "Agent "+r.agent_name : r.intent_label}</span>`));
+  mid.appendChild(el("div","ctx-sum", r.summary||""));
+  const tags=el("div","ctx-tags");
+  tags.innerHTML = resPill(r.resolution) + `<span class="tag">${moodText(r.end_mood)}</span>`;
+  mid.appendChild(tags);
+  row.appendChild(mid);
+  row.onclick=()=>{ openCall(r.sid); window.scrollTo({top:0,behavior:"smooth"}); };
+  return row;
+}
+
+async function renderCallContext(wrap, sid, call){
+  wrap.innerHTML = `<div class="card"><div class="spinner"></div></div>
+                    <div class="card"><div class="spinner"></div></div>`;
+  let ctx;
+  try { ctx = await get(`/api/calls/${sid}/context`); }
+  catch(e){ wrap.innerHTML=""; return; }
+  wrap.innerHTML="";
+
+  /* --- widget 1: this customer's other calls --- */
+  const a=el("div","card");
+  a.appendChild(el("h4",null,`${ctx.customer_name} · other calls`));
+  if(ctx.same_issue_repeats > 0){
+    const flag=el("div","ctx-flag");
+    flag.innerHTML=`${ICONS.warnTri}<span><b>Called about this issue ${ctx.same_issue_repeats}
+      other time${ctx.same_issue_repeats===1?"":"s"}.</b> A repeat on the same issue is worth
+      checking — an earlier call marked resolved may not have been.</span>`;
+    a.appendChild(flag);
+  }
+  if(!ctx.customer_calls.length){
+    a.appendChild(el("div","ctx-empty","No other calls from this customer."));
+  } else {
+    const list=el("div","ctx-list");
+    ctx.customer_calls.forEach(r=>list.appendChild(ctxRow(r)));
+    a.appendChild(list);
+  }
+  wrap.appendChild(a);
+
+  /* --- widget 2: everyone else with the same issue --- */
+  const b=el("div","card");
+  const st=ctx.intent_stats||{};
+  const pct = st.n ? Math.round(100*st.resolved/st.n) : 0;
+  // Title the CATEGORY, not this call's intent_label -- the list is grouped by
+  // intent_cat, and the free-text label ("reset_password") would misdescribe it.
+  b.appendChild(el("h4",null,`Others with: ${(ctx.intent_cat||"").replace(/_/g," ")}`));
+  const bar=el("div","ctx-stats");
+  bar.innerHTML=`<span><b>${st.n||0}</b> calls</span>
+    <span><b>${st.customers||0}</b> customers</span>
+    <span><b>${pct}%</b> resolved</span>
+    <span>avg score <b>${Math.round(st.avg_attention||0)}</b></span>`;
+  b.appendChild(bar);
+  b.appendChild(el("div","ctx-note",
+    pct >= 80
+      ? `Most of these get resolved — the ${100-pct}% that don't are the ones worth a shared fix.`
+      : `Only ${pct}% of these get resolved. That points at a process gap, not a one-off call.`));
+  if(!ctx.same_intent.length){
+    b.appendChild(el("div","ctx-empty","No other customers with this intent."));
+  } else {
+    const list=el("div","ctx-list");
+    ctx.same_intent.forEach(r=>list.appendChild(ctxRow(r,{showCustomer:true})));
+    b.appendChild(list);
+  }
+  wrap.appendChild(b);
 }
 
 /* ---------- routing ---------- */
@@ -963,17 +1530,30 @@ $("#fileInput").addEventListener("change", e=>{
   const f=e.target.files[0]; if(f) handleUploadFile(f);
   e.target.value="";
 });
+// Search is server-side now (a paged view can only filter what the server sends), so it
+// refetches -- debounced to avoid a request per keystroke -- and resets to the first page.
+let searchTimer=null;
 $("#globalSearch").addEventListener("input", ()=>{
-  const body = $("#main").querySelector(".table-card")?.parentElement;
-  if(state.view==="attention" && state.cache.attention){ renderAttentionTable($("#main").children[1], state.cache.attention); }
-  else if(state.view==="customers" && state.cache.customers){ renderCustomersTable($("#main").children[2], state.cache.customers, state.cache.stats?.latest_ms); }
-  else if(state.view==="agents" && state.cache.agents){ renderAgentsTable($("#main").children[2], state.cache.agents); }
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>{
+    if(!["attention","customers","agents"].includes(state.view)) return;
+    pageState[state.view]=0;
+    // reload just the table -- the stat cards and chrome are unaffected by a search
+    (state.reloadPage || route)();
+  }, 300);
 });
 
 /* ---------- chrome init ---------- */
 $("#railToggle").innerHTML = ICONS.menu;
 $("#searchIcon").innerHTML = ICONS.search;
 $("#filterBtn").innerHTML = ICONS.filter;
+// the topbar filter icon was decorative -- point it at the panel that actually exists
+$("#filterBtn").onclick = (e)=>{
+  e.stopPropagation();
+  const b = $("#intentFilterBtn");
+  if(b) b.click();
+  else toast("Filters are available on the Needs Attention tab.", "ok", 3200);
+};
 $("#chevIcon").innerHTML = ICONS.chev;
 applyTheme(document.documentElement.getAttribute("data-theme")||"light");
 setCollapsed(getCollapsed());
