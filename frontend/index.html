@@ -1,303 +1,1381 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>(function(){try{var t=localStorage.getItem('cr-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Call-Centre Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0c1118; --panel:#141b26; --panel-2:#1b2430; --line:#26303f;
-    --ink:#e8eef6; --muted:#8595a8; --dim:#5c6a7e;
-    --agent:#4aa3df; --caller:#e8b04b;
-    --ok:#3fb968; --warn:#e0a53b; --hot:#e5683c; --crit:#e0435a;
-    --accent:#5ad1c4;
-    --mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace;
+    --bg:#f6f7fb; --sidebar-bg:#eef0fb; --panel:#ffffff; --panel-2:#f4f5fb; --border:#e3e6f0;
+    --ink:#12172b; --body:#2b3350; --muted:#6b7280; --dim:#98a1b3;
+    --agent:#2563a8; --caller:#a8720a;
+    --accent:#4f46e5; --accent-hover:#4338ca; --accent-ink:#ffffff;
+    --accent-soft-bg:#e9e8fb; --accent-soft-fg:#4338ca;
+    --crit:#dc2626;    --crit-soft-bg:#fde3e3; --crit-soft-fg:#b91c1c;
+    --hot:#c2410c;     --hot-soft-bg:#ffedd5;  --hot-soft-fg:#9a3412;
+    --warn:#0d9488;    --warn-soft-bg:#ccfbf1; --warn-soft-fg:#0f766e;
+    --ok:#4f46e5;      --ok-soft-bg:#e9e8fb;   --ok-soft-fg:#4338ca;
+    --shadow:0 12px 32px rgba(30,35,70,.10);
+    --shadow-sm:0 2px 8px rgba(30,35,70,.06);
+    --radius:12px;
+    --av-bg-l:88%; --av-fg-l:34%;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
     --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --sidebar-w:264px;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1220; --sidebar-bg:#161a2c; --panel:#1b2036; --panel-2:#222842; --border:#2b3150;
+    --ink:#eef0fa; --body:#cdd3e6; --muted:#9aa3c0; --dim:#6b7396;
+    --agent:#6fb1e8; --caller:#e8b04b;
+    --accent:#8b85f5; --accent-hover:#a29cf7; --accent-ink:#0f1220;
+    --accent-soft-bg:#292763; --accent-soft-fg:#c7c2fb;
+    --crit:#f0555a;    --crit-soft-bg:rgba(240,85,90,.16);  --crit-soft-fg:#ff9d9f;
+    --hot:#f0824a;     --hot-soft-bg:rgba(240,130,74,.16);  --hot-soft-fg:#ffb27e;
+    --warn:#2fc4b4;    --warn-soft-bg:rgba(47,196,180,.16); --warn-soft-fg:#7de8db;
+    --ok:#8b85f5;      --ok-soft-bg:rgba(139,133,245,.18);  --ok-soft-fg:#c7c2fb;
+    --shadow:0 12px 32px rgba(0,0,0,.40);
+    --shadow-sm:0 2px 10px rgba(0,0,0,.32);
+    --av-bg-l:24%; --av-fg-l:80%;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  html{color-scheme:light}
+  html[data-theme="dark"]{color-scheme:dark}
+  body{margin:0;background:var(--bg);color:var(--body);font-family:var(--sans);
        font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
   a{color:inherit}
-  .app{display:grid;grid-template-columns:288px 1fr;min-height:100vh}
-  /* ---- left rail ---- */
-  .rail{background:var(--panel);border-right:1px solid var(--line);
-        display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-  .brand{padding:18px 18px 14px;border-bottom:1px solid var(--line)}
-  .brand h1{margin:0;font-size:15px;letter-spacing:.14em;text-transform:uppercase;
-            font-weight:700;display:flex;align-items:center;gap:9px}
-  .pulse{width:9px;height:9px;border-radius:50%;background:var(--accent);
-         box-shadow:0 0 0 0 rgba(90,209,196,.6);animation:pulse 2.4s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(90,209,196,.55)}
-    70%{box-shadow:0 0 0 10px rgba(90,209,196,0)}100%{box-shadow:0 0 0 0 rgba(90,209,196,0)}}
-  .brand .sub{color:var(--dim);font-size:11px;letter-spacing:.05em;margin-top:3px}
-  .nav{display:flex;flex-direction:column;padding:10px 8px;gap:2px;border-bottom:1px solid var(--line)}
-  .nav button{all:unset;cursor:pointer;padding:9px 12px;border-radius:7px;color:var(--muted);
-              font-size:13px;display:flex;align-items:center;gap:10px}
-  .nav button:hover{background:var(--panel-2);color:var(--ink)}
-  .nav button.on{background:var(--panel-2);color:var(--ink);
-                 box-shadow:inset 2px 0 0 var(--accent)}
-  .rail .list{overflow:auto;flex:1;padding:8px}
-  .rail .list h3{color:var(--dim);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
-                 margin:10px 10px 6px}
-  .cust{display:flex;align-items:center;justify-content:space-between;gap:8px;
-        padding:9px 10px;border-radius:8px;cursor:pointer}
-  .cust:hover{background:var(--panel-2)}
-  .cust.on{background:var(--panel-2);outline:1px solid var(--line)}
-  .cust .nm{font-size:13px}
-  .cust .meta{color:var(--dim);font-size:11px;font-family:var(--mono)}
-  /* ---- main ---- */
-  .main{padding:22px 26px 60px;max-width:1080px}
-  .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
-  .head h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em}
-  .head .note{color:var(--muted);font-size:12px}
-  .upload{all:unset;cursor:pointer;font-size:12px;color:var(--accent);
-          border:1px solid var(--line);padding:7px 12px;border-radius:7px}
-  .upload:hover{background:var(--panel)}
-  /* score dot */
-  .score{font-family:var(--mono);font-weight:600;font-size:12px;
-         padding:2px 8px;border-radius:20px;display:inline-block;min-width:34px;text-align:center}
-  .s-ok{background:rgba(63,185,104,.14);color:#6fe09a}
-  .s-warn{background:rgba(224,165,59,.15);color:#f0c069}
-  .s-hot{background:rgba(229,104,60,.16);color:#f59873}
-  .s-crit{background:rgba(224,67,90,.18);color:#f57a8c}
-  /* attention rows */
-  .row{display:grid;grid-template-columns:46px 1fr auto;gap:14px;align-items:center;
-       padding:13px 14px;background:var(--panel);border:1px solid var(--line);
-       border-radius:10px;margin-bottom:9px;cursor:pointer;transition:border-color .12s}
-  .row:hover{border-color:var(--dim)}
-  .row .who{font-weight:600}
-  .row .sm{color:var(--muted);font-size:12.5px;margin-top:2px}
-  .row .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
-  .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted);
-       border:1px solid var(--line);padding:1px 7px;border-radius:20px}
-  .tag.res-unresolved{color:#f57a8c;border-color:rgba(224,67,90,.4)}
-  .tag.res-escalated{color:#f59873;border-color:rgba(229,104,60,.4)}
-  .tag.res-follow_up_promised{color:#f0c069;border-color:rgba(224,165,59,.4)}
-  .tag.res-resolved{color:#6fe09a;border-color:rgba(63,185,104,.4)}
-  /* call view */
-  .grid2{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
-  @media(max-width:900px){.grid2{grid-template-columns:1fr}.app{grid-template-columns:1fr}
-    .rail{position:static;height:auto}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
-  .card h4{margin:0 0 10px;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
-  audio{width:100%;margin-top:4px;filter:saturate(.6)}
-  .summary{font-size:15px;line-height:1.55}
-  /* transcript */
-  .turn{display:flex;gap:12px;padding:7px 0;border-top:1px solid var(--line)}
+  button{font-family:inherit}
+  h1,h2,h3{font-family:var(--sans);color:var(--ink)}
+  ::selection{background:var(--accent);color:#fff}
+
+  .app{display:flex;min-height:100vh}
+  /* ---- sidebar ---- */
+  .sidebar{background:var(--sidebar-bg);border-right:1px solid var(--border);
+           width:var(--sidebar-w);flex:0 0 var(--sidebar-w);position:sticky;top:0;height:100vh;
+           overflow:hidden;transition:width .2s ease,flex-basis .2s ease,opacity .16s ease}
+  .app.collapsed .sidebar{width:0;flex-basis:0;opacity:0;border-right:none}
+  .sidebar-inner{width:var(--sidebar-w);display:flex;flex-direction:column;height:100%;padding:20px 16px}
+  .logo-block{display:flex;align-items:center;gap:11px;padding:4px 6px 22px}
+  .logo-icon{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;
+             display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex:0 0 38px}
+  .logo-name{font-weight:800;font-size:17px;color:var(--accent);letter-spacing:-.01em}
+  .logo-sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+            color:var(--muted);line-height:1.35;margin-top:2px}
+  .nav{display:flex;flex-direction:column;gap:3px}
+  .nav button{all:unset;cursor:pointer;padding:10px 12px;border-radius:9px;color:var(--body);
+              font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:11px;
+              transition:background .12s,color .12s}
+  .nav button svg{width:17px;height:17px;flex:0 0 17px;color:var(--muted)}
+  .nav button:hover{background:var(--panel)}
+  .nav button.on{background:var(--panel);color:var(--accent);box-shadow:var(--shadow-sm)}
+  .nav button.on svg{color:var(--accent)}
+  .sidebar-spacer{flex:1}
+  .user-card{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;
+             background:var(--panel);border:1px solid var(--border)}
+  .user-info{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .user-name{font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .user-role{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .dot-online{width:6px;height:6px;border-radius:50%;background:var(--warn);display:inline-block}
+
+  /* ---- content column ---- */
+  .content-col{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border);
+          display:flex;align-items:center;gap:12px;padding:14px 26px}
+  .icon-btn{all:unset;cursor:pointer;width:36px;height:36px;border-radius:9px;color:var(--muted);
+            display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;flex:0 0 36px}
+  .icon-btn:hover{background:var(--panel-2);color:var(--ink)}
+  .icon-btn svg{width:17px;height:17px}
+  .search-box{flex:1;max-width:640px;display:flex;align-items:center;gap:9px;background:var(--panel);
+              border:1px solid var(--border);border-radius:10px;padding:9px 13px;transition:border-color .15s}
+  .search-box:focus-within{border-color:var(--accent)}
+  .search-box svg{width:15px;height:15px;color:var(--dim);flex:0 0 15px}
+  .search-box input{all:unset;flex:1;font-size:13px;color:var(--ink)}
+  .search-box input::placeholder{color:var(--dim)}
+  .kbd{font-family:var(--mono);font-size:10.5px;color:var(--dim);border:1px solid var(--border);
+       border-radius:5px;padding:2px 6px;background:var(--panel-2)}
+  .profile-menu{position:relative}
+  .profile-trigger{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;
+                   border-radius:10px;font-size:13px;color:var(--body);transition:background .12s}
+  .profile-trigger:hover{background:var(--panel-2)}
+  .profile-trigger svg{width:13px;height:13px;color:var(--dim)}
+  .profile-dropdown{position:absolute;right:0;top:calc(100% + 8px);background:var(--panel);
+                    border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);
+                    width:200px;padding:8px;display:none;z-index:30}
+  .profile-dropdown.open{display:block}
+  .pd-row{padding:8px 10px;font-size:13px}
+  .pd-row .dim{color:var(--muted);font-size:11.5px}
+  .pd-sep{height:1px;background:var(--border);margin:6px 2px}
+  .pd-item{all:unset;cursor:pointer;display:block;width:100%;padding:8px 10px;border-radius:7px;
+           font-size:12.5px;color:var(--body)}
+  .pd-item:hover{background:var(--panel-2)}
+  .pd-item[disabled]{color:var(--dim);cursor:default}
+  .pd-item[disabled]:hover{background:none}
+
+  .main{flex:1;min-width:0;padding:26px 30px 70px;opacity:1;transition:opacity .15s ease}
+  .main.enter{opacity:0}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .page-head h2{margin:0 0 6px;font-size:25px;font-weight:800;letter-spacing:-.015em}
+  .page-head .note{color:var(--muted);font-size:13px}
+  .btn{all:unset;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--body);display:inline-flex;
+       align-items:center;gap:7px;border:1px solid var(--border);padding:9px 15px;border-radius:9px;
+       background:var(--panel);transition:border-color .15s,box-shadow .15s}
+  .btn:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft-bg)}
+  .btn svg{width:14px;height:14px}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:var(--accent-hover);border-color:var(--accent-hover);box-shadow:none}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat-card{background:var(--accent-soft-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+  .stat-card .label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+                     color:var(--muted);margin-bottom:8px}
+  .stat-card .value{font-size:25px;font-weight:800;color:var(--ink);font-family:var(--mono)}
+  .stat-card .value.tone-warn{color:var(--hot)}
+  .stat-card .status-row{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;color:var(--warn)}
+  .stat-card .status-dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+
+  /* generic card + table */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+        padding:18px 20px;margin-bottom:16px}
+  .card h4{margin:0 0 12px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+           display:flex;align-items:center;gap:6px}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:14px 14px;font-size:13.5px;border-bottom:1px solid var(--border);vertical-align:middle}
+  th{font-family:var(--mono);color:var(--muted);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+     font-weight:600;background:var(--panel-2)}
+  th:first-child{border-top-left-radius:var(--radius)} th:last-child{border-top-right-radius:var(--radius)}
+  tbody tr{transition:background .12s;cursor:pointer}
+  tbody tr:hover{background:var(--panel-2)}
+  tbody tr:last-child td{border-bottom:none}
+  .table-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+
+  /* score squares + soft pills */
+  .score{font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;border-radius:8px;
+         padding:6px 0;min-width:38px;text-align:center;display:inline-block}
+  .score.sev-crit{background:var(--crit)} .score.sev-hot{background:var(--hot)}
+  .score.sev-warn{background:var(--warn)} .score.sev-ok{background:var(--ok)}
+  .pill{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+        padding:4px 10px;border-radius:20px;display:inline-block}
+  .pill.sev-crit{background:var(--crit-soft-bg);color:var(--crit-soft-fg)}
+  .pill.sev-hot{background:var(--hot-soft-bg);color:var(--hot-soft-fg)}
+  .pill.sev-warn{background:var(--warn-soft-bg);color:var(--warn-soft-fg)}
+  .pill.sev-ok{background:var(--ok-soft-bg);color:var(--ok-soft-fg)}
+  .pill.solid{color:#fff}
+  .pill.solid.sev-crit{background:var(--crit)} .pill.solid.sev-hot{background:var(--hot)}
+  .pill.solid.sev-warn{background:var(--warn)} .pill.solid.sev-ok{background:var(--ok)}
+  .mood-text{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+  .mood-text.m-positive{color:var(--warn-soft-fg)} .mood-text.m-calm{color:var(--muted)}
+  .mood-text.m-concerned{color:var(--hot-soft-fg)} .mood-text.m-frustrated{color:var(--crit-soft-fg)}
+
+  /* evidence chip inline in tables */
+  .ev-inline{display:inline-flex;align-items:flex-start;gap:9px;background:var(--panel-2);border:1px solid var(--border);
+             border-radius:8px;padding:8px 11px;margin-top:8px;max-width:480px;cursor:pointer;transition:border-color .12s}
+  .ev-inline:hover{border-color:var(--accent)}
+  .ev-inline .t{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--accent);
+                background:var(--accent-soft-bg);border-radius:5px;padding:3px 6px;flex:0 0 auto}
+  .ev-inline .q{font-size:12px;font-style:italic;color:var(--body)}
+
+  .progress{display:flex;align-items:center;gap:9px}
+  .progress .track{width:96px;height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden}
+  .progress .track>span{display:block;height:100%;border-radius:4px}
+  .progress .track>span.sev-crit{background:var(--crit)} .progress .track>span.sev-hot{background:var(--hot)}
+  .progress .track>span.sev-warn{background:var(--warn)} .progress .track>span.sev-ok{background:var(--ok)}
+  .progress .num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--ink);min-width:20px}
+
+  .name-cell{display:flex;align-items:center;gap:11px}
+  .name-cell .meta{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .name-cell .nm{font-weight:600;color:var(--ink);font-size:13.5px}
+  .name-cell .id{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+          font-size:11.5px;font-weight:700;flex:0 0 34px}
+  .av-0{background:hsl(210 70% var(--av-bg-l));color:hsl(210 70% var(--av-fg-l))}
+  .av-1{background:hsl(280 55% var(--av-bg-l));color:hsl(280 55% var(--av-fg-l))}
+  .av-2{background:hsl(340 65% var(--av-bg-l));color:hsl(340 65% var(--av-fg-l))}
+  .av-3{background:hsl(24 75% var(--av-bg-l));color:hsl(24 75% var(--av-fg-l))}
+  .av-4{background:hsl(48 75% var(--av-bg-l));color:hsl(48 75% var(--av-fg-l))}
+  .av-5{background:hsl(165 55% var(--av-bg-l));color:hsl(165 55% var(--av-fg-l))}
+  .av-6{background:hsl(100 40% var(--av-bg-l));color:hsl(100 40% var(--av-fg-l))}
+  .av-7{background:hsl(255 55% var(--av-bg-l));color:hsl(255 55% var(--av-fg-l))}
+
+  .action-btn{all:unset;cursor:pointer;width:30px;height:30px;border-radius:8px;color:var(--muted);
+              display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s}
+  .action-btn:hover{background:var(--accent-soft-bg);color:var(--accent)}
+  .action-btn svg{width:15px;height:15px}
+
+  /* insight banner (Trends) */
+  .insight{display:flex;align-items:center;gap:16px;background:var(--crit-soft-bg);border:1px solid var(--crit-soft-fg);
+           border-radius:var(--radius);padding:16px 20px;margin-bottom:22px}
+  .insight-icon{width:38px;height:38px;border-radius:9px;background:var(--panel);display:flex;align-items:center;
+                justify-content:center;color:var(--crit);flex:0 0 38px}
+  .insight-icon svg{width:19px;height:19px}
+  .insight-body{flex:1;min-width:0}
+  .insight-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+                 color:var(--crit-soft-fg);font-weight:700;margin-bottom:3px}
+  .insight-title{font-size:17px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:10px}
+  .insight-delta{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--crit);
+                 background:var(--panel);border-radius:20px;padding:3px 10px}
+
+  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+  .chart-foot{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px}
+  .chart-foot .big{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--ink)}
+  .chart-foot .delta{font-family:var(--mono);font-size:12px;color:var(--warn-soft-fg);font-weight:700}
+
+  .res-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:900px){.res-tiles{grid-template-columns:repeat(2,1fr)}}
+  .res-tile{border-radius:11px;padding:15px 17px;border:1px solid var(--border)}
+  .res-tile .cat{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .res-tile .pct{font-family:var(--mono);font-size:21px;font-weight:800;color:var(--ink)}
+  .res-tile .status{float:right;font-size:11.5px;font-weight:700;margin-top:10px}
+
+  /* bulk upload */
+  .dropzone{border:2px dashed var(--border);border-radius:var(--radius);padding:52px 20px;text-align:center;
+            background:var(--panel-2);transition:border-color .15s,background .15s;cursor:pointer}
+  .dropzone.drag{border-color:var(--accent);background:var(--accent-soft-bg)}
+  .dropzone .cloud{color:var(--dim);margin-bottom:14px}
+  .dropzone .cloud svg{width:38px;height:38px}
+  .dropzone .title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:4px}
+  .dropzone .sub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .queue-head{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 10px}
+  .queue-head h4{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .queue-count{font-family:var(--mono);font-size:11.5px;color:var(--dim)}
+  .queue-head-right{display:flex;align-items:baseline;gap:14px}
+  .qi-clear{all:unset;cursor:pointer;width:26px;height:26px;flex:0 0 26px;border-radius:7px;
+            display:flex;align-items:center;justify-content:center;color:var(--dim);
+            margin-left:4px;transition:background .12s,color .12s}
+  .qi-clear svg{width:14px;height:14px}
+  .qi-clear:hover{background:var(--crit-soft-bg);color:var(--crit-soft-fg)}
+  .qi-clear:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .q-item{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:9px}
+  .q-item-top{display:flex;align-items:center;gap:11px}
+  .q-item .qi-icon{width:30px;height:30px;border-radius:8px;background:var(--panel-2);display:flex;
+                    align-items:center;justify-content:center;color:var(--muted);flex:0 0 30px}
+  .q-item .qi-icon svg{width:15px;height:15px}
+  .q-item .qi-name{flex:1;font-size:13px;font-weight:600;color:var(--ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .q-item .qi-status{font-family:var(--mono);font-size:11.5px;font-weight:700;flex:0 0 auto}
+  .q-item .qi-status.processing{color:var(--muted)}
+  .q-item .qi-status.ok{color:var(--warn-soft-fg)}
+  .q-item .qi-status.err{color:var(--crit-soft-fg)}
+  .q-item .qi-bar{height:4px;border-radius:3px;background:var(--panel-2);margin-top:9px;overflow:hidden}
+  .q-item .qi-bar>span{display:block;height:100%;background:var(--accent);border-radius:3px;animation:indet 1.1s ease-in-out infinite}
+  @keyframes indet{0%{width:15%;margin-left:0%}50%{width:55%;margin-left:45%}100%{width:15%;margin-left:85%}}
+  .q-sub{margin-top:10px;padding-left:41px;display:flex;flex-direction:column;gap:6px}
+  .q-sub-row{display:flex;align-items:center;gap:8px;font-size:12px}
+  .q-sub-row svg{width:13px;height:13px;flex:0 0 13px}
+  .q-sub-row.ok{color:var(--warn-soft-fg)} .q-sub-row.err{color:var(--crit-soft-fg)}
+  .q-sub-row a{all:unset;cursor:pointer;color:var(--accent);text-decoration:underline}
+
+  /* call detail (reused structure, new tokens) */
+  .grid2{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+  @media(max-width:980px){.grid2{grid-template-columns:1fr}}
+  audio{width:100%;margin-top:4px}
+  .summary-text{font-size:15px;line-height:1.6;color:var(--ink)}
+  .turn{display:flex;gap:12px;padding:8px 0;border-top:1px solid var(--border);transition:background .15s}
   .turn:first-child{border-top:none}
   .ts{all:unset;cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--dim);
-      min-width:46px;padding-top:2px}
+      min-width:46px;padding-top:2px;border-radius:4px}
   .ts:hover{color:var(--accent)}
   .turn .body{flex:1}
   .spk{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
   .spk.agent{color:var(--agent)} .spk.caller{color:var(--caller)}
-  .turn.hl{background:rgba(90,209,196,.07);border-radius:6px;margin:0 -8px;padding:7px 8px}
-  /* mood timeline */
-  .mood{display:flex;align-items:center;gap:0;margin-top:6px}
-  .chip{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;
-        border:1px solid var(--line)}
-  .m-positive{color:#6fe09a} .m-calm{color:var(--muted)}
-  .m-concerned{color:#f0c069} .m-frustrated{color:#f57a8c}
-  .track{flex:1;height:2px;background:linear-gradient(90deg,var(--ok),var(--crit));
-         margin:0 10px;position:relative;border-radius:2px}
-  .marker{position:absolute;top:-4px;width:10px;height:10px;border-radius:50%;
-          background:var(--hot);border:2px solid var(--bg)}
-  /* evidence */
-  .ev{background:var(--panel-2);border:1px solid var(--line);border-left:2px solid var(--accent);
-      border-radius:6px;padding:9px 11px;margin-top:8px;cursor:pointer}
+  .turn.hl{background:var(--accent-soft-bg);border-radius:6px;margin:0 -8px;padding:8px}
+  .mood-row{display:flex;align-items:center;gap:0;margin-top:6px}
+  .track-line{flex:1;height:3px;background:linear-gradient(90deg,var(--warn),var(--crit));
+              margin:0 10px;position:relative;border-radius:2px}
+  .marker{position:absolute;top:-4.5px;width:11px;height:11px;border-radius:50%;
+          background:var(--hot);border:2px solid var(--panel);cursor:pointer}
+  .ev{background:var(--panel-2);border:1px solid var(--border);border-left:3px solid var(--accent);
+      border-radius:6px;padding:9px 11px;margin-top:8px;cursor:pointer;transition:border-color .12s}
   .ev:hover{border-left-color:var(--caller)}
-  .ev .q{font-size:12.5px;color:var(--ink)}
+  .ev .q{font-size:12.5px;color:var(--ink);font-style:italic}
   .ev .at{font-family:var(--mono);font-size:10.5px;color:var(--accent);margin-top:3px}
+  .note-line{color:var(--muted);font-size:12.5px}
   .reasons{list-style:none;margin:0;padding:0}
-  .reasons li{display:flex;justify-content:space-between;font-size:12.5px;
-              padding:6px 0;border-top:1px solid var(--line);color:var(--muted)}
+  .reasons li{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;
+              border-top:1px solid var(--border);color:var(--muted)}
   .reasons li:first-child{border-top:none}
-  .reasons b{font-family:var(--mono);color:var(--ink);font-weight:600}
-  .kv{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
-  .kv:first-child{border-top:none} .kv .k{color:var(--muted)}
-  table{width:100%;border-collapse:collapse}
-  th,td{text-align:left;padding:10px 12px;font-size:13px;border-bottom:1px solid var(--line)}
-  th{color:var(--dim);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
-  td.n{font-family:var(--mono)}
-  .bar{height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;min-width:90px}
-  .bar>span{display:block;height:100%;background:var(--accent)}
-  .empty{color:var(--dim);padding:40px;text-align:center}
-  .back{all:unset;cursor:pointer;color:var(--accent);font-size:12px;margin-bottom:12px;display:inline-block}
+  .reasons b{font-family:var(--mono);color:var(--ink);font-weight:700}
+  .back{all:unset;cursor:pointer;color:var(--accent);font-size:12.5px;margin-bottom:14px;display:inline-flex;
+        align-items:center;gap:6px;font-weight:600}
+  .back svg{width:13px;height:13px}
+
+  /* summary cell + tooltip */
+  .sum-cell{max-width:330px}
+  .sum-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+             overflow:hidden;cursor:help;border-radius:4px}
+  .sum-clamp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .tooltip{position:fixed;z-index:400;max-width:430px;background:var(--ink);color:var(--panel);
+           font-size:12.5px;line-height:1.5;padding:10px 13px;border-radius:8px;
+           box-shadow:var(--shadow);pointer-events:none;opacity:0;visibility:hidden;
+           transition:opacity .13s ease;top:0;left:0}
+  .tooltip.on{opacity:1;visibility:visible}
+  .tip-quote{display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding-top:8px;
+             border-top:1px solid color-mix(in srgb, var(--panel) 25%, transparent);
+             font-style:italic;opacity:.92}
+  .tip-t{font-family:var(--mono);font-style:normal;font-size:11px;flex:0 0 auto;
+         background:color-mix(in srgb, var(--panel) 18%, transparent);border-radius:4px;
+         padding:1px 6px}
+
+  /* resolution flag bar (on-page, not in the dropdown) */
+  .head-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .flagbar{display:inline-flex;background:var(--panel-2);border:1px solid var(--border);
+           border-radius:9px;padding:3px;gap:2px}
+  .flag{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+        padding:6px 12px;border-radius:7px;font-size:12.5px;font-weight:500;color:var(--muted);
+        text-transform:capitalize;transition:background .12s,color .12s}
+  .flag:hover{color:var(--ink)}
+  .flag:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .flag.on{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:var(--shadow-sm)}
+  .flag-n{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .flag.on .flag-n{color:var(--accent)}
+
+  /* filter panel */
+  .filter-wrap{position:relative}
+  .filter-btn{display:inline-flex;align-items:center;gap:7px}
+  .filter-count{font-family:var(--mono);font-size:10.5px;font-weight:700;background:var(--accent);
+                color:#fff;border-radius:99px;padding:1px 7px;margin-left:2px}
+  .filter-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:30;
+                width:290px;max-height:60vh;overflow-y:auto;background:var(--panel);
+                border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);
+                padding:10px}
+  .filter-panel.open{display:block}
+  .filter-group + .filter-group{border-top:1px solid var(--border);margin-top:8px;padding-top:8px}
+  .filter-group-head{display:flex;align-items:baseline;justify-content:space-between;
+                     font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+                     text-transform:uppercase;color:var(--muted);padding:4px 8px 7px}
+  .filter-clear,.filter-clear-all{all:unset;cursor:pointer;color:var(--accent);
+                                  font-family:var(--sans);font-size:11px;letter-spacing:0;
+                                  text-transform:none}
+  .filter-clear:hover,.filter-clear-all:hover{text-decoration:underline}
+  .filter-clear-all{display:block;width:100%;text-align:center;padding:9px 0 4px;
+                    border-top:1px solid var(--border);margin-top:8px;font-size:12px}
+  .filter-row{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;
+              cursor:pointer;font-size:12.5px}
+  .filter-row:hover{background:var(--panel-2)}
+  .filter-row input{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;flex:0 0 14px}
+  .filter-label{flex:1;color:var(--ink);text-transform:capitalize}
+  .filter-n{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .filter-empty{padding:14px;font-size:12.5px;color:var(--dim);text-align:center}
+  /* active-filter chips */
+  .chip-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+  .f-chip{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+          background:var(--accent-soft-bg);color:var(--accent-soft-fg);border-radius:99px;
+          padding:4px 10px;font-size:12px;text-transform:capitalize;
+          border:1px solid transparent;transition:border-color .12s}
+  .f-chip:hover{border-color:var(--accent)}
+  .f-chip-k{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+            opacity:.7}
+  .f-chip-x{font-size:14px;line-height:1;opacity:.7}
+
+  /* sortable headers */
+  th.th-sort{cursor:pointer;user-select:none;white-space:nowrap;transition:color .12s}
+  th.th-sort:hover{color:var(--accent)}
+  th.th-sort:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  th.th-sort.on{color:var(--accent)}
+  .th-arrow{margin-left:5px;font-size:9px;opacity:.45;font-family:var(--sans)}
+  th.th-sort.on .th-arrow{opacity:1}
+  th.th-sort:hover .th-arrow{opacity:.9}
+
+  /* pagination */
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+         padding:14px 4px 4px}
+  .pager-info{font-size:12.5px;color:var(--muted)}
+  .pager-info b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  .pager-nav{display:flex;align-items:center;gap:5px}
+  .pg{all:unset;cursor:pointer;min-width:31px;height:31px;padding:0 8px;border-radius:7px;
+      border:1px solid var(--border);background:var(--panel);color:var(--body);
+      font-family:var(--mono);font-size:12px;display:inline-flex;align-items:center;
+      justify-content:center;transition:border-color .12s,background .12s}
+  .pg:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .pg:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .pg.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  .pg:disabled{opacity:.42;cursor:default}
+  .pg-gap{color:var(--dim);font-family:var(--mono);font-size:12px;padding:0 2px}
+
+  /* sibling-call widgets */
+  .ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-top:2px}
+  @media(max-width:980px){.ctx-grid{grid-template-columns:1fr}}
+  .ctx-stats{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);
+             padding-bottom:11px;border-bottom:1px solid var(--border);margin-bottom:4px}
+  .ctx-stats b{font-family:var(--mono);color:var(--ink);font-weight:700}
+  .ctx-note{font-size:12.5px;color:var(--muted);padding:9px 0 4px;line-height:1.5}
+  .ctx-flag{display:flex;gap:9px;align-items:flex-start;background:var(--hot-soft-bg);
+            border:1px solid var(--hot-soft-fg);border-radius:8px;padding:10px 12px;
+            font-size:12.5px;color:var(--ink);line-height:1.5;margin-bottom:12px}
+  .ctx-flag svg{width:15px;height:15px;flex:0 0 15px;color:var(--hot-soft-fg);margin-top:2px}
+  .ctx-list{display:flex;flex-direction:column;max-height:392px;overflow-y:auto;
+            margin:0 -6px;padding:0 6px}
+  .ctx-row{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;
+           padding:11px 8px;border-top:1px solid var(--border);cursor:pointer;
+           border-radius:7px;transition:background .12s}
+  .ctx-row:first-child{border-top:none}
+  .ctx-row:hover{background:var(--panel-2)}
+  .ctx-row .score{min-width:34px;font-size:12px;padding:4px 0}
+  .ctx-mid{min-width:0}
+  .ctx-head{font-size:13px;font-weight:600;color:var(--ink)}
+  .ctx-dim{color:var(--dim);font-weight:400}
+  .ctx-sum{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45;
+           display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ctx-tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center}
+  .ctx-empty{color:var(--dim);font-size:12.5px;padding:20px 0;text-align:center}
+  .empty{color:var(--dim);padding:50px;text-align:center;font-size:13.5px}
+  .spinner{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);
+           border-top-color:var(--accent);animation:spin .7s linear infinite;margin:40px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:360px}
+  .toast{background:var(--panel);border:1px solid var(--border);color:var(--ink);padding:11px 14px;
+         border-radius:9px;box-shadow:var(--shadow);font-size:13px;transition:opacity .2s,transform .2s;
+         border-left:3px solid var(--accent);white-space:pre-line}
+  .toast.err{border-left-color:var(--crit)} .toast.ok{border-left-color:var(--warn)}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(15,18,32,.45);z-index:35}
+  @media(max-width:900px){
+    .sidebar{position:fixed;top:0;left:0;z-index:40;box-shadow:var(--shadow);opacity:1}
+    .app.collapsed .sidebar{width:var(--sidebar-w);flex-basis:var(--sidebar-w);border-right:1px solid var(--border);
+                             opacity:1;transform:translateX(-100%)}
+    .app:not(.collapsed) .scrim{display:block}
+    .main{padding:18px 16px 60px}
+    .topbar{padding:12px 14px}
+  }
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="rail">
-    <div class="brand">
-      <h1><span class="pulse"></span> Call Radar</h1>
-      <div class="sub">conversation intelligence</div>
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+      <div class="logo-block">
+        <div class="logo-icon">@</div>
+        <div>
+          <div class="logo-name">Call Radar</div>
+          <div class="logo-sub">Operational<br>Intelligence</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <div class="sidebar-spacer"></div>
+      <div class="user-card">
+        <div class="avatar av-3">MG</div>
+        <div class="user-info">
+          <div class="user-name">Manager</div>
+          <div class="user-role"><span class="dot-online"></span> On duty</div>
+        </div>
+      </div>
     </div>
-    <nav class="nav" id="nav"></nav>
-    <div class="list" id="custList"></div>
   </aside>
-  <main class="main" id="main"></main>
+  <div class="content-col">
+    <header class="topbar">
+      <button class="icon-btn" id="railToggle" title="Toggle sidebar"></button>
+      <div class="search-box">
+        <span id="searchIcon"></span>
+        <input id="globalSearch" placeholder="Search..." autocomplete="off">
+        <span class="kbd">⌘K</span>
+      </div>
+      <button class="icon-btn" id="filterBtn" title="Filter"></button>
+      <button class="icon-btn" id="themeToggle" title="Toggle theme"></button>
+      <div class="profile-menu">
+        <button class="profile-trigger" id="profileTrigger">
+          <span>Profile</span>
+          <span class="avatar av-3" style="width:24px;height:24px;font-size:9.5px;flex:0 0 24px">MG</span>
+          <span id="chevIcon"></span>
+        </button>
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="pd-row"><b>Manager</b><br><span class="dim">Global Ops · On duty</span></div>
+          <div class="pd-sep"></div>
+          <button class="pd-item" id="pdTheme">Toggle theme</button>
+          <button class="pd-item" disabled>Sign out</button>
+        </div>
+      </div>
+    </header>
+    <main class="main" id="main"></main>
+  </div>
 </div>
 <input type="file" id="fileInput" accept=".zip" style="display:none">
+<div class="toasts" id="toasts"></div>
 
 <script>
-const API = "";
+const ICONS = {
+  menu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
+  sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.6" y1="4.6" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.4" y2="19.4"/><line x1="4.6" y1="19.4" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.4" y2="4.6"/></svg>`,
+  moon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 1 0 10.5 10.5z"/></svg>`,
+  search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg>`,
+  filter: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4 4 20 4 14 12.5 14 19 10 21 10 12.5 4 4"/></svg>`,
+  chev: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+  x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  chevL: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="9 18 15 12 9 6"/></svg>`,
+  bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  users2: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  trend: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="14 6 21 6 21 13"/></svg>`,
+  headset: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><path d="M21 15a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h3z"/><path d="M3 15a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H3z"/><path d="M17 17v1a3 3 0 0 1-3 3h-2"/></svg>`,
+  upload: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M7 8l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>`,
+  extLink: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`,
+  check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  alertCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  file: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="11"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`,
+  back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
+  warnTri: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+};
+
 const $ = s => document.querySelector(s);
 const el = (t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
-const get = p => fetch(API+p).then(r=>r.json());
+const get = p => fetch(p).then(r=>r.json());
 const fmtT = s => s==null?"—":`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
-const scoreClass = n => n>=75?"s-crit":n>=50?"s-hot":n>=25?"s-warn":"s-ok";
-const state = {view:"attention", customer:null, call:null};
+const sevOf = n => n>=75?"crit":n>=50?"hot":n>=25?"warn":"ok";
+const state = {view:"attention", customer:null, call:null, cache:{}, uploads:[]};
 
-const NAV = [["attention","Needs attention"],["trends","Trends"],["agents","Agents"]];
+/* ---------- chrome: theme, sidebar, search, profile, toast ---------- */
+const THEME_KEY="cr-theme", SIDEBAR_KEY="cr-sidebar";
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  localStorage.setItem(THEME_KEY, t);
+  const btn=$("#themeToggle"); if(btn) btn.innerHTML = t==="dark" ? ICONS.sun : ICONS.moon;
+}
+function isNarrow(){ return window.matchMedia("(max-width:900px)").matches; }
+function getCollapsed(){
+  const saved = localStorage.getItem(SIDEBAR_KEY);
+  if(saved!==null) return saved==="1";
+  return isNarrow();
+}
+function setCollapsed(c){
+  $("#app").classList.toggle("collapsed", c);
+  localStorage.setItem(SIDEBAR_KEY, c?"1":"0");
+}
+function closeOnMobile(){ if(isNarrow()) setCollapsed(true); }
+function toast(msg, kind="ok", ms=5200){
+  const box=$("#toasts"); const t=el("div","toast "+kind); t.textContent=msg;
+  box.appendChild(t);
+  setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(-6px)"; setTimeout(()=>t.remove(),220); }, ms);
+}
+function freshMain(){ const m=$("#main"); m.classList.add("enter"); m.innerHTML=""; requestAnimationFrame(()=>m.classList.remove("enter")); return m; }
+function initials(name){
+  const parts=(name||"?").trim().split(/\s+/);
+  return ((parts[0]?.[0]||"")+(parts[1]?.[0]||parts[0]?.[1]||"")).toUpperCase();
+}
+function hashName(name){ let h=0; for(const ch of (name||"")) h=(h*31+ch.charCodeAt(0))>>>0; return h; }
+function avatarClass(name){ return "av-"+(hashName(name)%8); }
+function pseudoId(prefix,name){ return prefix+"-"+String(hashName(name)%100000).padStart(5,"0"); }
+
+// Wording matches what the server actually searches -- transcript text and "skills" are
+// not indexed, so promising them in the placeholder would be a lie.
+const SEARCH_PLACEHOLDERS = {
+  attention:"Search customer, agent, summary or intent...",
+  customers:"Search customer names...",
+  trends:"Search trends...", agents:"Search agent names...", upload:"Search...",
+  customer:"Search this customer's calls...",
+};
+function setSearchPlaceholder(){ $("#globalSearch").placeholder = SEARCH_PLACEHOLDERS[state.view] || "Search..."; }
+
+/* ---------- reusable pieces ---------- */
+function scoreBadge(n){ return `<span class="score sev-${sevOf(n)}">${n}</span>`; }
+function resPill(res){ const sev = res==="unresolved"?"crit":res==="escalated"?"hot":res==="follow_up_promised"?"warn":"ok";
+  return `<span class="pill sev-${sev}">${res.replace(/_/g," ")}</span>`; }
+function moodText(m){ return `<span class="mood-text m-${m}">${m}</span>`; }
+function statCards(items){
+  const wrap=el("div","stats");
+  items.forEach(it=>{
+    const c=el("div","stat-card");
+    c.appendChild(el("div","label",it.label));
+    if(it.status){
+      c.appendChild(el("div","status-row",`<span class="status-dot"></span>${it.value}`));
+    } else {
+      c.appendChild(el("div","value"+(it.tone==="warn"?" tone-warn":""),String(it.value)));
+    }
+    wrap.appendChild(c);
+  });
+  return wrap;
+}
+function evInline(t, quote){
+  if(t==null || !quote) return "";
+  return `<div class="ev-inline" data-seek="${t}"><span class="t">${fmtT(t)}</span><span class="q">"${quote}"</span></div>`;
+}
+function wireSeekChips(container, sid){
+  container.querySelectorAll("[data-seek]").forEach(n=>{
+    n.onclick = (e)=>{ e.stopPropagation(); openCall(sid, parseFloat(n.dataset.seek)); };
+  });
+}
+
+/* ---------- nav ---------- */
+const NAV = [["attention","Needs Attention","bell"],["customers","Customers","users2"],
+             ["trends","Trends","trend"],["agents","Agents","headset"],["upload","Bulk Upload","upload"]];
 function renderNav(){
   const n=$("#nav"); n.innerHTML="";
-  NAV.forEach(([k,label])=>{
-    const b=el("button",state.view===k&&!state.call?"on":"",label);
-    b.onclick=()=>{state.call=null;state.customer=null;state.view=k;route();};
+  NAV.forEach(([k,label,icon])=>{
+    const b=el("button",state.view===k&&!state.call?"on":"", `${ICONS[icon]}<span>${label}</span>`);
+    b.onclick=()=>{state.call=null;state.customer=null;state.view=k;route();closeOnMobile();};
     n.appendChild(b);
   });
 }
 
-async function renderCustomers(){
-  const list=$("#custList"); list.innerHTML="";
-  list.appendChild(el("h3",null,"Customers"));
-  const cs=await get("/api/customers");
-  cs.forEach(c=>{
-    const row=el("div","cust"+(state.customer===c.customer_name?" on":""));
-    row.appendChild(el("span","nm",c.customer_name));
-    const m=el("span","meta");
-    m.appendChild(el("span","score "+scoreClass(c.max_attention||0),String(c.max_attention||0)));
-    m.append(` ${c.n}`);
-    row.appendChild(m);
-    row.onclick=()=>{state.customer=c.customer_name;state.call=null;state.view="customer";route();};
-    list.appendChild(row);
+/* ---------- simple inline SVG charts ---------- */
+function barChart(data, w=520, h=230){
+  const max=Math.max(...data.map(d=>d.n),1);
+  const padL=8, padB=26, padT=10, innerW=w-padL*2, innerH=h-padT-padB;
+  const bw = innerW/data.length*0.55, gap = innerW/data.length;
+  const peak = Math.max(...data.map(d=>d.n));
+  let bars="", labels="";
+  data.forEach((d,i)=>{
+    const bh = (d.n/max)*innerH;
+    const x = padL + i*gap + (gap-bw)/2;
+    const y = padT + innerH - bh;
+    const isPeak = d.n===peak;
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="4"
+             fill="${isPeak?'var(--ink)':'var(--accent-soft-bg)'}"></rect>`;
+    labels += `<text x="${(x+bw/2).toFixed(1)}" y="${h-6}" font-size="10.5" text-anchor="middle"
+               fill="var(--muted)" font-family="var(--mono)">${d.label}</text>`;
   });
+  for(let i=0;i<=3;i++){
+    const y = padT + innerH - (innerH*i/3);
+    bars += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-padL}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"></line>`;
+  }
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">${bars}${labels}</svg>`;
+}
+function lineChart(data, w=380, h=230){
+  if(!data.length) return `<div class="empty">No data yet.</div>`;
+  const vals = data.map(d=>d.avg_attention);
+  const max = Math.max(...vals,10), min = Math.min(...vals,0);
+  const padL=30, padB=22, padT=10, innerW=w-padL-10, innerH=h-padT-padB;
+  const range = (max-min)||1;
+  const pts = data.map((d,i)=>{
+    const x = padL + (data.length===1?innerW/2:innerW*i/(data.length-1));
+    const y = padT + innerH - ((d.avg_attention-min)/range)*innerH;
+    return [x,y];
+  });
+  const poly = pts.map(p=>p.join(",")).join(" ");
+  const areaPts = `${padL},${padT+innerH} ${poly} ${padL+innerW},${padT+innerH}`;
+  let gridY="", gridLabels="";
+  for(let i=0;i<=3;i++){
+    const y = padT + innerH - (innerH*i/3);
+    const val = Math.round(min + range*i/3);
+    gridY += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-10}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-width="1"></line>`;
+    gridLabels += `<text x="${padL-6}" y="${(y+3).toFixed(1)}" font-size="9.5" text-anchor="end" fill="var(--muted)" font-family="var(--mono)">${val}</text>`;
+  }
+  const dots = pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2" fill="var(--accent)"></circle>`).join("");
+  const labels = data.map((d,i)=>`<text x="${pts[i][0].toFixed(1)}" y="${h-4}" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-family="var(--mono)">${(d.d||"").slice(5)}</text>`).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">
+    ${gridY}${gridLabels}
+    <polygon points="${areaPts}" fill="var(--accent-soft-bg)"></polygon>
+    <polyline points="${poly}" fill="none" stroke="var(--accent)" stroke-width="2.2"></polyline>
+    ${dots}${labels}
+  </svg>`;
+}
+
+/* ---------- server-side pagination ---------- */
+const PAGE_SIZE = 20;
+const pageState = { attention:0, customers:0, agents:0 };
+
+/** Corpus-wide totals for the stat cards. They do not change while paging, so fetch once
+ *  and reuse; handleUploadFile clears state.cache when new calls are ingested. */
+async function getStats(){
+  if(!state.cache.stats) state.cache.stats = await get("/api/stats");
+  return state.cache.stats;
+}
+
+// current sort per view; null field = server default ordering
+const sortState = { attention:{field:null,dir:"asc"},
+                    customers:{field:null,dir:"asc"}, agents:{field:null,dir:"asc"} };
+// active filters on Needs Attention; empty set = no constraint on that facet
+const filterState = { intents:new Set(), resolutions:new Set() };
+const activeFilterCount = ()=> filterState.intents.size + filterState.resolutions.size;
+
+function pageQuery(view, extra=""){
+  const q = ($("#globalSearch").value||"").trim();
+  const s = sortState[view];
+  let out = `?page=${pageState[view]}&size=${PAGE_SIZE}`
+    + (q ? `&q=${encodeURIComponent(q)}` : "")
+    + (s && s.field ? `&sort=${s.field}&order=${s.dir}` : "");
+  if(view === "attention"){
+    // repeatable params -- ?intent=a&intent=b, OR'd server-side
+    filterState.intents.forEach(v => out += `&intent=${encodeURIComponent(v)}`);
+    filterState.resolutions.forEach(v => out += `&resolution=${encodeURIComponent(v)}`);
+  }
+  return out + extra;
+}
+
+const prettyCat = v => v.replace(/_/g," ");
+
+/* ---------- tooltip ----------
+   One shared node on <body>, positioned fixed. It cannot live inside the table: the
+   .table-card clips overflow, so an absolutely-positioned tooltip would be cut off at
+   the card edge. */
+let _tipEl = null, _tipTarget = null, _tipText = "";
+function _tip(){
+  if(!_tipEl){ _tipEl = el("div","tooltip"); document.body.appendChild(_tipEl); }
+  return _tipEl;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/** `content` is either a plain string or {summary, t, quote} -- the quote being the
+ *  transcript line the judgment cites, so the full evidence reads in one hover. */
+function showTip(target, content){
+  if(!content) return;
+  _tipTarget = target; _tipText = content;
+  const t = _tip();
+  if(typeof content === "string"){
+    t.innerHTML = `<div class="tip-sum">${esc(content)}</div>`;
+  } else {
+    t.innerHTML = `<div class="tip-sum">${esc(content.summary)}</div>`
+      + (content.quote
+          ? `<div class="tip-quote"><span class="tip-t">${fmtT(content.t)}</span>`
+            + `<span>&ldquo;${esc(content.quote)}&rdquo;</span></div>`
+          : "");
+  }
+  t.classList.add("on");
+  const r = target.getBoundingClientRect();
+  const tr = t.getBoundingClientRect();
+  const margin = 8;
+  // prefer above; flip below when there is not enough headroom
+  let top = r.top - tr.height - margin;
+  if(top < margin) top = r.bottom + margin;
+  let left = r.left + r.width/2 - tr.width/2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - tr.width - margin));
+  t.style.top = `${top}px`;
+  t.style.left = `${left}px`;
+}
+function hideTip(){
+  _tipTarget = null; _tipText = "";
+  if(_tipEl) _tipEl.classList.remove("on");
+}
+/** Show `content` on hover/focus of `node`. Keyboard-reachable, so the full summary is
+ *  not mouse-only. */
+function attachTooltip(node, content){
+  if(!content) return node;
+  node.tabIndex = 0;
+  node.addEventListener("mouseenter", ()=>showTip(node, content));
+  node.addEventListener("focus",      ()=>showTip(node, content));
+  node.addEventListener("mouseleave", hideTip);
+  node.addEventListener("blur",       hideTip);
+  return node;
+}
+// Reposition on scroll rather than hide, so the tooltip stays anchored to its row
+// instead of flickering away on a trackpad nudge.
+let _tipRaf = null;
+window.addEventListener("scroll", ()=>{
+  if(!_tipTarget) return;
+  if(_tipRaf) cancelAnimationFrame(_tipRaf);
+  _tipRaf = requestAnimationFrame(()=>{
+    if(_tipTarget) showTip(_tipTarget, _tipText);
+  });
+}, true);
+
+/** Resolution flag, shown directly on the page rather than buried in the filter panel --
+ *  it is the coarsest, most-used cut of the list, so it should be one click away.
+ *  Values come from the facets, so a corpus with escalated / follow-up calls gets those
+ *  buttons too. Toggling is multi-select; "All" is simply the empty selection. */
+async function buildResolutionFlags(reload){
+  const wrap = el("div","flagbar");
+  let facets;
+  try {
+    if(!state.cache.facets) state.cache.facets = await get("/api/filters");
+    facets = state.cache.facets;
+  } catch(e){ return wrap; }
+
+  const draw = ()=>{
+    wrap.innerHTML = "";
+    const set = filterState.resolutions;
+    const mk = (label, count, activeWhen, onClick)=>{
+      const b = el("button","flag"+(activeWhen?" on":""),
+        `${label}${count!=null?`<span class="flag-n">${count.toLocaleString()}</span>`:""}`);
+      b.onclick = ()=>{ onClick(); pageState.attention = 0; draw(); reload(); };
+      return b;
+    };
+    wrap.appendChild(mk("All", null, set.size === 0, ()=> set.clear()));
+    facets.resolutions.forEach(r=>{
+      wrap.appendChild(mk(prettyCat(r.value), r.n, set.has(r.value),
+        ()=> set.has(r.value) ? set.delete(r.value) : set.add(r.value)));
+    });
+  };
+  draw();
+  return wrap;
+}
+
+/** Filter panel for Needs Attention: intent checkboxes, counts from /api/filters. */
+async function buildFilterPanel(reload){
+  const wrap = el("div","filter-wrap");
+  const btn = el("button","btn filter-btn");
+  btn.id = "intentFilterBtn";
+  const paint = ()=>{
+    const n = filterState.intents.size;      // resolution has its own on-page control
+    btn.innerHTML = `${ICONS.filter}<span>Intent</span>`
+      + (n ? `<span class="filter-count">${n}</span>` : "");
+  };
+  paint();
+  const panel = el("div","filter-panel");
+  wrap.appendChild(btn); wrap.appendChild(panel);
+  btn.onclick = (e)=>{ e.stopPropagation(); panel.classList.toggle("open"); };
+  panel.onclick = (e)=> e.stopPropagation();
+  document.addEventListener("click", ()=> panel.classList.remove("open"));
+
+  // facet counts only change when calls are ingested, and handleUploadFile clears the
+  // cache -- so this survives view rebuilds without refetching
+  let facets;
+  try {
+    if(!state.cache.facets) state.cache.facets = await get("/api/filters");
+    facets = state.cache.facets;
+  }
+  catch(e){ panel.appendChild(el("div","filter-empty","Could not load filters.")); return wrap; }
+
+  const group = (title, items, set, labelFn)=>{
+    const g = el("div","filter-group");
+    const head = el("div","filter-group-head");
+    head.appendChild(el("span",null,title));
+    const clear = el("button","filter-clear","Clear");
+    clear.onclick = ()=>{ set.clear(); rerender(); };
+    head.appendChild(clear);
+    g.appendChild(head);
+    items.forEach(it=>{
+      const row = el("label","filter-row");
+      const cb = el("input"); cb.type="checkbox"; cb.checked = set.has(it.value);
+      cb.onchange = ()=>{ cb.checked ? set.add(it.value) : set.delete(it.value); rerender(); };
+      row.appendChild(cb);
+      row.appendChild(el("span","filter-label", labelFn(it)));
+      row.appendChild(el("span","filter-n", String(it.n)));
+      g.appendChild(row);
+    });
+    return g;
+  };
+
+  function rerender(){
+    pageState.attention = 0;      // a changed filter invalidates the current page
+    paint();
+    draw();
+    reload();
+  }
+  function draw(){
+    panel.innerHTML = "";
+    // resolution lives on the page as a flag bar, so this panel is intent only
+    panel.appendChild(group("Intent", facets.intents, filterState.intents,
+      it => prettyCat(it.value)));
+    if(filterState.intents.size){
+      const all = el("button","filter-clear-all","Clear intent filters");
+      all.onclick = ()=>{ filterState.intents.clear(); rerender(); };
+      panel.appendChild(all);
+    }
+  }
+  draw();
+  return wrap;
+}
+
+/** Sortable <th>. Clicking toggles asc/desc, a third click clears back to the server
+ *  default, and any sort change returns to page 0 -- staying on page 5 of a different
+ *  ordering would show unrelated rows. */
+function sortableHead(label, field, view, reload, opts={}){
+  const s = sortState[view];
+  const active = s.field === field;
+  const arrow = active ? (s.dir === "asc" ? "▲" : "▼") : "";
+  const th = el("th", "th-sort" + (active ? " on" : ""),
+    `<span>${label}</span><span class="th-arrow">${arrow || "↕"}</span>`);
+  th.tabIndex = 0;
+  th.title = `Sort by ${label.toLowerCase()}`;
+  const apply = ()=>{
+    if(!active)            { s.field = field; s.dir = opts.firstDir || "asc"; }
+    else if(s.dir === (opts.firstDir || "asc")) { s.dir = s.dir === "asc" ? "desc" : "asc"; }
+    else                   { s.field = null; s.dir = "asc"; }   // third click: back to default
+    pageState[view] = 0;
+    reload();
+  };
+  th.onclick = apply;
+  th.onkeydown = (e)=>{ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); apply(); } };
+  return th;
+}
+
+function headRow(cells){
+  const tr = el("tr");
+  cells.forEach(c => tr.appendChild(typeof c === "string" ? el("th", null, c) : c));
+  return tr;
+}
+
+/** Pager bar: range summary + windowed page buttons. `reload` re-fetches the view. */
+function pager(p, view, reload){
+  const bar=el("div","pager");
+  const from = p.totalElements ? p.page*p.size + 1 : 0;
+  const to = p.page*p.size + p.numberOfElements;
+  bar.appendChild(el("div","pager-info",
+    `Showing <b>${from.toLocaleString()}–${to.toLocaleString()}</b> of <b>${p.totalElements.toLocaleString()}</b>`));
+  const nav=el("div","pager-nav");
+  const btn=(label,target,disabled,current)=>{
+    const b=el("button","pg"+(current?" on":""),label);
+    if(disabled||current){ b.disabled=true; } else { b.onclick=()=>{ pageState[view]=target; reload(); }; }
+    return b;
+  };
+  nav.appendChild(btn(ICONS.chevL, p.page-1, p.first));
+  // window of at most 5 page numbers around the current page
+  const last=p.totalPages-1;
+  let start=Math.max(0, Math.min(p.page-2, last-4)), end=Math.min(last, start+4);
+  if(start>0){ nav.appendChild(btn("1",0,false,p.page===0)); if(start>1) nav.appendChild(el("span","pg-gap","…")); }
+  for(let i=start;i<=end;i++) nav.appendChild(btn(String(i+1), i, false, i===p.page));
+  if(end<last){ if(end<last-1) nav.appendChild(el("span","pg-gap","…")); nav.appendChild(btn(String(last+1), last, false, p.page===last)); }
+  nav.appendChild(btn(ICONS.chevR, p.page+1, p.last));
+  bar.appendChild(nav);
+  return bar;
 }
 
 /* ---------- views ---------- */
 async function viewAttention(){
-  const m=$("#main"); m.innerHTML="";
-  const head=el("div","head");
-  head.appendChild(el("div",null,`<h2>Needs a manager's attention</h2>
-    <div class="note">Ranked across all calls. Higher score = more likely to need follow-up.</div>`));
-  const up=el("button","upload","Upload recordings ▲"); up.onclick=()=>$("#fileInput").click();
-  head.appendChild(up); m.appendChild(head);
-  const rows=await get("/api/attention?limit=50");
-  if(!rows.length){m.appendChild(el("div","empty","No calls yet. Seed demo data or upload a .zip."));return;}
+  const m=freshMain();
+  const head=el("div","page-head");
+  head.appendChild(el("div",null,`<h2>Needs Attention Today</h2>
+    <div class="note">Calls prioritized by attention score (0-100).</div>`));
+  m.appendChild(head);
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+  state.reloadPage = ()=>loadAttentionPage(body);
+  const controls=el("div","head-controls");
+  controls.appendChild(await buildResolutionFlags(()=>loadAttentionPage(body)));
+  controls.appendChild(await buildFilterPanel(()=>loadAttentionPage(body)));
+  head.appendChild(controls);
+  await loadAttentionPage(body);
+}
+// Paging re-renders only the table -- the surrounding chrome does not change, so there is
+// no reason to rebuild the page (or refetch /api/stats) to turn a page.
+async function loadAttentionPage(body){
+  const p=await get("/api/attention"+pageQuery("attention"));
+  renderAttentionTable(body, p);
+}
+function renderAttentionTable(body, p){
+  const rows=p.content||[];
+  body.innerHTML="";
+
+  // active intent filters as removable chips -- resolution is not chipped because the
+  // flag bar above already shows it, and two controls for one filter invites confusion
+  if(filterState.intents.size){
+    const chips=el("div","chip-row");
+    filterState.intents.forEach(val=>{
+      const c=el("button","f-chip",
+        `<span class="f-chip-k">intent</span>${prettyCat(val)}<span class="f-chip-x">×</span>`);
+      c.title=`Remove intent filter: ${prettyCat(val)}`;
+      // route() rebuilds the view so the Intent button's count and the panel's
+      // checkboxes stay in step with the chips
+      c.onclick=()=>{ filterState.intents.delete(val); pageState.attention=0; route(); };
+      chips.appendChild(c);
+    });
+    body.appendChild(chips);
+  }
+
+  if(!rows.length){
+    const q=($("#globalSearch").value||"").trim();
+    body.appendChild(el("div","empty",
+      activeFilterCount() ? "No calls match these filters."
+      : q ? "No matches." : "No calls yet. Use Bulk Upload to ingest recordings."));
+    return;
+  }
+  const card=el("div","table-card"); const tbl=el("table");
+  const reload=()=>loadAttentionPage(body);
+  tbl.appendChild(headRow([
+    sortableHead("Score", "score", "attention", reload, {firstDir:"desc"}),
+    sortableHead("Customer", "customer", "attention", reload),
+    sortableHead("Agent", "agent", "attention", reload),
+    "Summary",
+    sortableHead("Resolution", "resolution", "attention", reload),
+    sortableHead("Mood", "mood", "attention", reload, {firstDir:"desc"}),
+    "Intent",
+    "Action",
+  ]));
   rows.forEach(r=>{
-    const row=el("div","row");
-    row.appendChild(el("div","score "+scoreClass(r.attention),String(r.attention)));
-    const mid=el("div");
-    mid.appendChild(el("div","who",`${r.customer_name} <span style="color:var(--dim);font-weight:400">· ${r.agent_name}</span>`));
-    mid.appendChild(el("div","sm",r.summary||""));
-    const tags=el("div","tags");
-    tags.appendChild(el("span","tag res-"+r.resolution,r.resolution.replace(/_/g," ")));
-    tags.appendChild(el("span","tag",`${r.start_mood} → ${r.end_mood}`));
-    mid.appendChild(tags); row.appendChild(mid);
-    row.appendChild(el("div","tag",r.intent_label));
-    row.onclick=()=>openCall(r.sid);
-    m.appendChild(row);
+    const tr=el("tr");
+    tr.innerHTML=`<td>${scoreBadge(r.attention)}</td>
+      <td><b style="color:var(--ink)">${r.customer_name}</b></td>
+      <td>Agent ${r.agent_name}</td>
+      <td class="sum-cell"><div class="sum-clamp">${r.summary||""}</div>${evInline(r.shift_t, r.shift_quote)}</td>
+      <td>${resPill(r.resolution)}</td>
+      <td>${moodText(r.end_mood)}</td>
+      <td>${r.intent_label}</td>
+      <td><button class="action-btn" title="Open call">${ICONS.extLink}</button></td>`;
+    // summaries are clamped to keep rows uniform; the tooltip carries the full text plus
+    // the transcript line the judgment cites
+    const clamp = tr.querySelector(".sum-clamp");
+    if(clamp && r.summary){
+      attachTooltip(clamp, {summary: r.summary, t: r.shift_t, quote: r.shift_quote});
+    }
+    tr.onclick=()=>openCall(r.sid);
+    wireSeekChips(tr, r.sid);
+    tbl.appendChild(tr);
   });
+  card.appendChild(tbl); body.appendChild(card);
+  body.appendChild(pager(p, "attention", ()=>loadAttentionPage(body)));
+}
+
+async function viewCustomers(){
+  const m=freshMain();
+  m.appendChild(el("div","page-head",`<div><h2>Customers</h2>
+    <div class="note">Monitoring active customer accounts and attention scores.</div></div>
+    <button class="btn" id="exportBtn">${ICONS.upload}<span>Export</span></button>`));
+  const stats = await getStats();
+  m.appendChild(statCards([
+    {label:"Total Customers Monitored", value: stats.total_customers},
+    {label:"Critical Attention Needed", value: stats.critical_customers, tone:"warn"},
+    {label:"Calls (latest day)", value: stats.calls_latest_day},
+    {label:"System Status", value:"Operational", status:true},
+  ]));
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+  state.reloadPage = ()=>loadCustomersPage(body);
+  await loadCustomersPage(body);
+}
+async function loadCustomersPage(body){
+  const p=await get("/api/customers"+pageQuery("customers"));
+  renderCustomersTable(body, p, (state.cache.stats||{}).latest_ms);
+}
+function renderCustomersTable(body, p, latestMs){
+  const rows=p.content||[];
+  body.innerHTML="";
+  if(!rows.length){
+    body.appendChild(el("div","empty", ($("#globalSearch").value||"").trim()
+      ? "No matches." : "No customers yet."));
+    return;
+  }
+  const card=el("div","table-card"); const tbl=el("table");
+  const reload=()=>loadCustomersPage(body);
+  tbl.appendChild(headRow([
+    sortableHead("Customer Name & ID", "name", "customers", reload),
+    sortableHead("Total Calls", "calls", "customers", reload, {firstDir:"desc"}),
+    sortableHead("Worst Attention Score", "attention", "customers", reload, {firstDir:"desc"}),
+    sortableHead("Last Contact", "last_contact", "customers", reload, {firstDir:"desc"}),
+    "Actions",
+  ]));
+  rows.forEach(c=>{
+    const sev=sevOf(c.max_attention||0);
+    const daysAgo = latestMs ? Math.max(0, Math.round((latestMs - c.last_ms)/86400000)) : null;
+    const lastContact = daysAgo==null ? "—" : daysAgo===0 ? "Today" : daysAgo===1 ? "1 day ago" : `${daysAgo} days ago`;
+    const tr=el("tr");
+    tr.innerHTML=`<td><div class="name-cell">
+        <div class="avatar ${avatarClass(c.customer_name)}">${initials(c.customer_name)}</div>
+        <div class="meta"><span class="nm">${c.customer_name}</span><span class="id">ID: ${pseudoId("CUS",c.customer_name)}</span></div>
+      </div></td>
+      <td class="n">${c.n}</td>
+      <td><div class="progress"><div class="track"><span class="sev-${sev}" style="width:${Math.min(100,c.max_attention||0)}%"></span></div>
+          <span class="num">${c.max_attention||0}</span> ${`<span class="pill sev-${sev}">${sev==="crit"?"critical":sev==="hot"?"hot":sev==="warn"?"warn":"normal"}</span>`}</div></td>
+      <td>${lastContact}</td>
+      <td><button class="action-btn" title="View history">${ICONS.extLink}</button></td>`;
+    tr.onclick=()=>{state.customer=c.customer_name;state.call=null;state.view="customer";route();closeOnMobile();};
+    tbl.appendChild(tr);
+  });
+  card.appendChild(tbl); body.appendChild(card);
+  body.appendChild(pager(p, "customers", ()=>loadCustomersPage(body)));
 }
 
 async function viewCustomer(){
-  const m=$("#main"); m.innerHTML="";
-  m.appendChild(el("div","head",`<div><h2>${state.customer}</h2>
+  const m=freshMain();
+  const back=el("button","back",`${ICONS.back}<span>All customers</span>`);
+  back.onclick=()=>{state.customer=null;state.view="customers";route();};
+  m.appendChild(back);
+  m.appendChild(el("div","page-head",`<div><h2>${state.customer}</h2>
     <div class="note">Full call history</div></div>`));
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
   const calls=await get(`/api/customers/${encodeURIComponent(state.customer)}/calls`);
+  body.innerHTML="";
+  if(!calls.length){ body.appendChild(el("div","empty","No calls.")); return; }
+  const card=el("div","table-card"); const tbl=el("table");
+  tbl.innerHTML="<tr><th>Date</th><th>Agent</th><th>Score</th><th>Summary</th><th>Resolution</th><th>Mood</th><th>Duration</th></tr>";
   calls.forEach(r=>{
-    const row=el("div","row");
-    row.appendChild(el("div","score "+scoreClass(r.attention),String(r.attention)));
-    const mid=el("div");
-    mid.appendChild(el("div","who",new Date(r.start_ms).toLocaleString()));
-    mid.appendChild(el("div","sm",r.summary||""));
-    const tags=el("div","tags");
-    tags.appendChild(el("span","tag res-"+r.resolution,r.resolution.replace(/_/g," ")));
-    tags.appendChild(el("span","tag",`${r.start_mood} → ${r.end_mood}`));
-    tags.appendChild(el("span","tag",fmtT(r.duration_s)));
-    mid.appendChild(tags); row.appendChild(mid);
-    row.appendChild(el("div","tag",r.intent_label));
-    row.onclick=()=>openCall(r.sid);
-    m.appendChild(row);
+    const tr=el("tr");
+    tr.innerHTML=`<td class="n">${new Date(r.start_ms).toLocaleDateString()}</td>
+      <td>Agent ${r.agent_name}</td>
+      <td>${scoreBadge(r.attention)}</td>
+      <td style="max-width:280px">${r.summary||""}</td>
+      <td>${resPill(r.resolution)}</td>
+      <td>${moodText(r.end_mood)}</td>
+      <td class="n">${fmtT(r.duration_s)}</td>`;
+    tr.onclick=()=>openCall(r.sid);
+    tbl.appendChild(tr);
   });
-  if(!calls.length) m.appendChild(el("div","empty","No calls."));
+  card.appendChild(tbl); body.appendChild(card);
 }
 
 async function viewTrends(){
-  const m=$("#main"); m.innerHTML="";
-  m.appendChild(el("div","head",`<div><h2>Trending issues</h2>
-    <div class="note">Call volume by intent, with resolution rate.</div></div>`));
-  const t=await get("/api/trends");
-  const max=Math.max(...t.map(x=>x.n),1);
-  const card=el("div","card"); const tbl=el("table");
-  tbl.innerHTML="<tr><th>Issue</th><th>Volume</th><th>Resolved</th><th>Avg attention</th></tr>";
-  t.forEach(x=>{
-    const tr=el("tr");
-    tr.innerHTML=`<td>${x.intent_cat.replace(/_/g," ")}</td>
-      <td><div class="bar"><span style="width:${100*x.n/max}%"></span></div></td>
-      <td class="n">${x.resolved}/${x.n}</td>
-      <td><span class="score ${scoreClass(x.avg_attention)}">${Math.round(x.avg_attention)}</span></td>`;
-    tbl.appendChild(tr);
+  const m=freshMain();
+  m.appendChild(el("div","page-head",`<div><h2>Conversation Trends</h2>
+    <div class="note">Analyzing call volumes and resolutions across primary categories.</div></div>
+    <button class="btn">${ICONS.upload}<span>Export</span></button>`));
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+  const [cats, timeline] = await Promise.all([get("/api/trends"), get("/api/trends/timeline?days=7")]);
+  body.innerHTML="";
+  if(!cats.length){ body.appendChild(el("div","empty","No calls yet.")); return; }
+
+  const top = cats[0];
+  const overallRate = cats.reduce((a,c)=>a+c.resolved,0)/cats.reduce((a,c)=>a+c.n,0)*100;
+  const topRate = 100*top.resolved/top.n;
+  const delta = (topRate-overallRate).toFixed(0);
+  const insight=el("div","insight");
+  insight.innerHTML=`<div class="insight-icon">${ICONS.warnTri}</div>
+    <div class="insight-body">
+      <div class="insight-label">Top issue by volume</div>
+      <div class="insight-title">${top.intent_cat.replace(/_/g," ")}
+        <span class="insight-delta">${delta>=0?"+":""}${delta} pts resolution vs avg</span></div>
+    </div>
+    <button class="btn primary" id="investigateBtn">Investigate Calls ${ICONS.extLink}</button>`;
+  body.appendChild(insight);
+  insight.querySelector("#investigateBtn").onclick=()=>{
+    $("#globalSearch").value = top.intent_cat.replace(/_/g," ");
+    state.view="attention"; route();
+  };
+
+  const chartsRow=el("div","charts-row");
+  const volCard=el("div","card");
+  volCard.appendChild(el("h4",null,"Call Volume by Category"));
+  volCard.appendChild(el("div",null, barChart(cats.slice(0,6).map(c=>({label:c.intent_cat.replace(/_/g," ").slice(0,10), n:c.n})))));
+  const trendCard=el("div","card");
+  trendCard.appendChild(el("h4",null,"Attention Score Trend"));
+  trendCard.appendChild(el("div",null, lineChart(timeline)));
+  if(timeline.length){
+    const cur = timeline[timeline.length-1].avg_attention;
+    const prev = timeline.length>1 ? timeline[timeline.length-2].avg_attention : cur;
+    const d = (cur-prev).toFixed(1);
+    const foot=el("div","chart-foot");
+    foot.innerHTML=`<div><div class="note">Current avg</div><div class="big">${cur.toFixed(1)}</div></div>
+      <div class="delta">${d>=0?"+":""}${d} vs prior day</div>`;
+    trendCard.appendChild(foot);
+  }
+  chartsRow.appendChild(volCard); chartsRow.appendChild(trendCard);
+  body.appendChild(chartsRow);
+
+  const tilesWrap=el("div","card");
+  tilesWrap.appendChild(el("h4",null,"Resolution Rate per Category"));
+  const tiles=el("div","res-tiles");
+  cats.slice(0,4).forEach(c=>{
+    const pct = Math.round(100*c.resolved/c.n);
+    const status = pct>=90?["Optimal","var(--warn-soft-fg)"]:pct>=75?["Stable","var(--muted)"]:["Warning","var(--crit-soft-fg)"];
+    const tile=el("div","res-tile"); tile.style.background = pct>=90?"var(--warn-soft-bg)":pct>=75?"var(--panel-2)":"var(--crit-soft-bg)";
+    tile.innerHTML=`<div class="cat">${c.intent_cat.replace(/_/g," ")}</div>
+      <div class="pct">${pct}%</div><div class="status" style="color:${status[1]}">${status[0]}</div>`;
+    tiles.appendChild(tile);
   });
-  card.appendChild(tbl); m.appendChild(card);
+  tilesWrap.appendChild(tiles); body.appendChild(tilesWrap);
 }
 
 async function viewAgents(){
-  const m=$("#main"); m.innerHTML="";
-  m.appendChild(el("div","head",`<div><h2>Agents</h2>
-    <div class="note">Volume, handle time and outcomes per agent.</div></div>`));
-  const a=await get("/api/agents");
-  const card=el("div","card"); const tbl=el("table");
-  tbl.innerHTML="<tr><th>Agent</th><th>Calls</th><th>Avg handle</th><th>Resolved</th><th>Avg attention</th></tr>";
-  a.forEach(x=>{
+  const m=freshMain();
+  m.appendChild(el("div","page-head",`<div><h2>Agent Performance</h2>
+    <div class="note">Volume, handle time, resolution outcomes, and clarification signals per agent.</div></div>
+    <button class="btn">${ICONS.upload}<span>Export</span></button>`));
+  const stats = await getStats();
+  m.appendChild(statCards([
+    {label:"Total Agents", value: stats.total_agents},
+    {label:"High Risk", value: stats.high_risk_agents, tone:"warn"},
+    {label:"Avg Handle Time", value: fmtT(stats.avg_handle_s)},
+    {label:"System Status", value:"Operational", status:true},
+  ]));
+  const body=el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+  state.reloadPage = ()=>loadAgentsPage(body);
+  await loadAgentsPage(body);
+}
+async function loadAgentsPage(body){
+  const p=await get("/api/agents"+pageQuery("agents"));
+  renderAgentsTable(body, p);
+}
+function renderAgentsTable(body, p){
+  const rows=p.content||[];
+  body.innerHTML="";
+  if(!rows.length){
+    body.appendChild(el("div","empty", ($("#globalSearch").value||"").trim()
+      ? "No matches." : "No agents yet."));
+    return;
+  }
+  const card=el("div","table-card"); const tbl=el("table");
+  const reload=()=>loadAgentsPage(body);
+  tbl.appendChild(headRow([
+    sortableHead("Agent Name & ID", "name", "agents", reload),
+    sortableHead("Call Volume", "calls", "agents", reload, {firstDir:"desc"}),
+    "Avg Handle Time",
+    "Resolution Rate",
+    sortableHead("Avg Attention Score", "score", "agents", reload, {firstDir:"desc"}),
+    el("th",null,`Clarification Signal <span title="How often the agent had to repeat or rephrase a question in the same call, relative to peers">${ICONS.info}</span>`),
+  ]));
+  rows.forEach(a=>{
+    const sev = sevOf(a.avg_attention||0);
+    const okwarn = a.avg_attention>=50 ? '<span class="pill solid sev-hot">WARN</span>' : '<span class="pill sev-ok">OK</span>';
+    const resPct = Math.round(100*a.resolved/a.calls);
+    const clarSev = a.clarification_signal==="High" ? "hot" : "ok";
     const tr=el("tr");
-    tr.innerHTML=`<td>${x.agent_name}</td><td class="n">${x.calls}</td>
-      <td class="n">${fmtT(x.avg_handle_s)}</td>
-      <td class="n">${x.resolved}/${x.calls}</td>
-      <td><span class="score ${scoreClass(x.avg_attention)}">${Math.round(x.avg_attention)}</span></td>`;
+    tr.innerHTML=`<td><div class="name-cell">
+        <div class="avatar ${avatarClass(a.agent_name)}">${initials(a.agent_name)}</div>
+        <div class="meta"><span class="nm">${a.agent_name}</span><span class="id">ID: ${pseudoId("AGT",a.agent_name)}</span></div>
+      </div></td>
+      <td class="n">${a.calls}</td>
+      <td class="n">${fmtT(a.avg_handle_s)}</td>
+      <td class="n">${resPct}%</td>
+      <td><div class="progress"><div class="track"><span class="sev-${sev}" style="width:${Math.min(100,a.avg_attention||0)}%"></span></div>
+          <span class="num">${Math.round(a.avg_attention)}</span></div> ${okwarn}</td>
+      <td><span class="pill sev-${clarSev}">${a.clarification_signal}</span></td>`;
     tbl.appendChild(tr);
   });
-  card.appendChild(tbl); m.appendChild(card);
+  card.appendChild(tbl); body.appendChild(card);
+  body.appendChild(pager(p, "agents", ()=>loadAgentsPage(body)));
+}
+
+/* ---------- bulk upload ---------- */
+function viewUpload(){
+  const m=freshMain();
+  m.appendChild(el("div","page-head",`<div><h2>Bulk Upload</h2>
+    <div class="note">Ingest new recordings — transcribe, analyse, and store in one pass.</div></div>`));
+  const card=el("div","card");
+  const dz=el("div","dropzone");
+  dz.innerHTML=`<div class="cloud">${ICONS.upload}</div>
+    <div class="title">Drag and drop a .zip of recordings here</div>
+    <div class="sub">containing audio/ and metadata/ folders — or click to browse</div>
+    <button class="btn primary" type="button">Select File</button>`;
+  dz.onclick=()=>$("#fileInput").click();
+  ["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.add("drag");}));
+  ["dragleave","dragend"].forEach(ev=>dz.addEventListener(ev, e=>{dz.classList.remove("drag");}));
+  dz.addEventListener("drop", e=>{
+    e.preventDefault(); dz.classList.remove("drag");
+    const f = e.dataTransfer.files[0]; if(f) handleUploadFile(f);
+  });
+  card.appendChild(dz); m.appendChild(card);
+
+  const qHead=el("div","queue-head");
+  qHead.innerHTML=`<h4>Upload Queue</h4>`;
+  const right=el("div","queue-head-right");
+  const clearDone=el("button","filter-clear","Clear finished");
+  clearDone.onclick=()=>{
+    state.uploads = state.uploads.filter(u => u.status === "processing");
+    renderUploadQueue($("#uploadList"));
+  };
+  right.appendChild(clearDone);
+  right.appendChild(el("span","queue-count",
+    `${state.uploads.length} file${state.uploads.length===1?"":"s"}`));
+  qHead.appendChild(right);
+  m.appendChild(qHead);
+  const list=el("div"); list.id="uploadList"; m.appendChild(list);
+  renderUploadQueue(list);
+}
+/** Drop one finished entry from the queue. In-flight uploads are not clearable: the
+ *  server keeps processing regardless, so removing the row would just hide work that is
+ *  still happening. */
+function clearUpload(entry){
+  state.uploads = state.uploads.filter(u => u !== entry);
+  const list = $("#uploadList");
+  if(list) renderUploadQueue(list);
+}
+function syncQueueCount(){
+  const cnt = $(".queue-count");
+  if(cnt) cnt.textContent = `${state.uploads.length} file${state.uploads.length===1?"":"s"}`;
+}
+function renderUploadQueue(list){
+  list.innerHTML="";
+  syncQueueCount();
+  if(!state.uploads.length){ list.appendChild(el("div","empty","No uploads yet in this session.")); return; }
+  [...state.uploads].reverse().forEach(u=>{
+    const item=el("div","q-item");
+    const top=el("div","q-item-top");
+    const doneLabel = `${u.ingested.length} ingested`
+      + ((u.skipped||[]).length ? ` · ${u.skipped.length} skipped` : "");
+    const busyLabel = u.total ? `Processing ${u.processed||0} / ${u.total}…` : "Queued…";
+    top.innerHTML=`<div class="qi-icon">${ICONS.file}</div><div class="qi-name">${u.name}</div>
+      <div class="qi-status ${u.status==='processing'?'processing':u.status==='done'?'ok':'err'}">
+        ${u.status==='processing'?busyLabel:u.status==='done'?doneLabel:'Failed'}</div>`;
+    if(u.status!=="processing"){
+      const x=el("button","qi-clear",ICONS.x);
+      x.title="Clear from queue"; x.setAttribute("aria-label",`Clear ${u.name} from queue`);
+      x.onclick=(e)=>{ e.stopPropagation(); clearUpload(u); };
+      top.appendChild(x);
+    }
+    item.appendChild(top);
+    if(u.status==="processing"){
+      const bar=el("div","qi-bar");
+      if(u.total){                       // real progress once the zip has been opened
+        const pct=Math.round(100*(u.processed||0)/u.total);
+        bar.innerHTML=`<span style="width:${pct}%;animation:none"></span>`;
+      } else {
+        bar.innerHTML=`<span></span>`;   // indeterminate while still queued
+      }
+      item.appendChild(bar);
+    } else {
+      const sub=el("div","q-sub");
+      (u.ingested||[]).forEach(sid=>{
+        const row=el("div","q-sub-row ok");
+        row.innerHTML=`${ICONS.check}<a>${sid}</a> — ingested`;
+        row.querySelector("a").onclick=()=>openCall(sid);
+        sub.appendChild(row);
+      });
+      (u.failed||[]).forEach(f=>{
+        const row=el("div","q-sub-row err");
+        row.innerHTML=`${ICONS.alertCircle}<span>${f.sid}: ${f.error}</span>`;
+        sub.appendChild(row);
+      });
+      if(u.error){
+        const row=el("div","q-sub-row err"); row.innerHTML=`${ICONS.alertCircle}<span>${u.error}</span>`; sub.appendChild(row);
+      }
+      item.appendChild(sub);
+    }
+    list.appendChild(item);
+  });
+}
+async function handleUploadFile(file){
+  const entry = {id: state.uploads.length+1, name: file.name, status:"processing",
+                 ingested:[], skipped:[], failed:[], processed:0, total:null};
+  state.uploads.push(entry);
+  const list=$("#uploadList"); if(list){ renderUploadQueue(list); const cnt=$(".queue-count"); if(cnt) cnt.textContent = state.uploads.length+" file"+(state.uploads.length===1?"":"s"); }
+  const fd=new FormData(); fd.append("file", file);
+  try{
+    // The server queues the zip and returns a job id straight away -- transcription is
+    // ~30s per call, far too slow to hold the request open. Poll for progress instead.
+    const job = await fetch("/api/upload",{method:"POST",body:fd}).then(r=>r.json());
+    if(!job.id) throw new Error(job.detail || "upload rejected");
+    entry.jobId = job.id;
+    while(true){
+      await new Promise(r=>setTimeout(r, 1500));
+      const s = await get(`/api/jobs/${job.id}`);
+      Object.assign(entry, {processed:s.processed, total:s.total, ingested:s.ingested||[],
+                            skipped:s.skipped||[], failed:s.failed||[], error:s.error});
+      if($("#uploadList")) renderUploadQueue($("#uploadList"));
+      if(s.status==="done" || s.status==="failed"){ entry.status = s.status==="done" ? "done" : "error"; break; }
+    }
+    const bits=[`${entry.ingested.length} ingested`];
+    if(entry.skipped.length) bits.push(`${entry.skipped.length} already present (skipped)`);
+    if(entry.failed.length)  bits.push(`${entry.failed.length} failed`);
+    toast(bits.join(", ")+".", entry.failed.length||entry.error?"err":"ok");
+  }catch(err){
+    entry.status="error"; entry.error=String(err);
+    toast("Upload failed: "+err, "err");
+  }
+  state.cache = {}; // invalidate so other views refetch fresh data
+  if($("#uploadList")) renderUploadQueue($("#uploadList"));
 }
 
 /* ---------- per-call ---------- */
-let audioEl=null;
-function seek(t){ if(audioEl&&t!=null){audioEl.currentTime=t;audioEl.play();highlightTurn(t);} }
-function highlightTurn(t){
-  document.querySelectorAll(".turn").forEach(n=>n.classList.remove("hl"));
+let audioEl=null, pendingSeek=null, hlTurnEl=null;
+function seek(t){ if(audioEl&&t!=null){audioEl.currentTime=t;audioEl.play();highlightTurn(t,true);} }
+function highlightTurn(t, forceScroll){
   const el=[...document.querySelectorAll(".turn")].reverse()
     .find(n=>parseFloat(n.dataset.t)<=t+0.01);
-  if(el){el.classList.add("hl");el.scrollIntoView({block:"center",behavior:"smooth"});}
+  if(!el || el===hlTurnEl){ return; }          // same turn still active -- don't fight manual scrolling
+  if(hlTurnEl) hlTurnEl.classList.remove("hl");
+  el.classList.add("hl");
+  hlTurnEl = el;
+  el.scrollIntoView({block:"center",behavior:"smooth"});
 }
 
-async function openCall(sid){
+async function openCall(sid, seekTo){
   state.call=sid; state.view="call"; renderNav();
+  hlTurnEl = null;
   const c=await get(`/api/calls/${sid}`); const a=c.analysis_json;
-  const m=$("#main"); m.innerHTML="";
-  const back=el("button","back","← back"); back.onclick=()=>{state.call=null;route();};
+  const m=freshMain();
+  const back=el("button","back",`${ICONS.back}<span>back</span>`); back.onclick=()=>{state.call=null;route();};
   m.appendChild(back);
-  m.appendChild(el("div","head",`<div><h2>${c.customer_name}
-    <span style="color:var(--dim);font-weight:400;font-size:15px">· ${c.agent_name}</span></h2>
+  m.appendChild(el("div","page-head",`<div><h2>${c.customer_name}
+    <span style="color:var(--dim);font-weight:400;font-size:16px">· Agent ${c.agent_name}</span></h2>
     <div class="note">${new Date(c.start_ms).toLocaleString()} · ${fmtT(c.duration_s)} · ${c.sid}</div></div>
-    <span class="score ${scoreClass(c.attention)}" style="font-size:15px;padding:6px 12px">${c.attention}</span>`));
+    ${scoreBadge(c.attention)}`));
 
   const grid=el("div","grid2");
   const left=el("div"), right=el("div");
 
-  // player + summary
   const player=el("div","card");
   player.appendChild(el("h4",null,"Recording"));
   const au=el("audio"); au.controls=true; au.src=`/audio/${c.sid}.mp3`; au.preload="metadata";
   player.appendChild(au); audioEl=au;
   au.ontimeupdate=()=>highlightTurn(au.currentTime);
+  if(seekTo!=null){ au.addEventListener("loadedmetadata", ()=>seek(seekTo), {once:true}); }
   left.appendChild(player);
 
   const sum=el("div","card");
   sum.appendChild(el("h4",null,"AI summary"));
-  sum.appendChild(el("div","summary",c.summary||""));
+  sum.appendChild(el("div","summary-text",c.summary||""));
   left.appendChild(sum);
 
-  // transcript
   const tc=el("div","card");
   tc.appendChild(el("h4",null,"Transcript · click a timestamp to hear it"));
   (c.transcript||[]).forEach(t=>{
@@ -311,9 +1389,8 @@ async function openCall(sid){
   });
   left.appendChild(tc);
 
-  // right column: intent, mood, resolution, attention
-  const evChip=(ev,label)=>{
-    if(!ev){return el("div","note","No supporting evidence found.");}
+  const evChip=(ev)=>{
+    if(!ev){return el("div","note-line","No supporting evidence found.");}
     const d=el("div","ev");
     d.appendChild(el("div","q",`"${ev.quote}"`));
     d.appendChild(el("div","at",`▶ ${fmtT(ev.t)} — click to hear`));
@@ -322,31 +1399,31 @@ async function openCall(sid){
 
   const ic=el("div","card");
   ic.appendChild(el("h4",null,"Intent"));
-  ic.appendChild(el("div","summary",a.intent.label));
+  ic.appendChild(el("div","summary-text",a.intent.label));
   ic.appendChild(evChip(a.intent.evidence));
   right.appendChild(ic);
 
   const mc=el("div","card");
   mc.appendChild(el("h4",null,"Mood"));
-  const mood=el("div","mood");
-  mood.appendChild(el("span","chip m-"+a.mood.start_mood,a.mood.start_mood));
-  const track=el("div","track");
+  const mood=el("div","mood-row");
+  mood.appendChild(el("span","mood-text m-"+a.mood.start_mood,a.mood.start_mood));
+  const track=el("div","track-line");
   if(a.mood.shifted&&a.mood.shift){
     const pct=Math.min(90,Math.max(10,100*(a.mood.shift.t/(c.duration_s||1))));
-    const mk=el("div","marker"); mk.style.left=pct+"%"; track.appendChild(mk);
+    const mk=el("div","marker"); mk.style.left=pct+"%"; mk.onclick=()=>seek(a.mood.shift.t); track.appendChild(mk);
   }
   mood.appendChild(track);
-  mood.appendChild(el("span","chip m-"+a.mood.end_mood,a.mood.end_mood));
+  mood.appendChild(el("span","mood-text m-"+a.mood.end_mood,a.mood.end_mood));
   mc.appendChild(mood);
   if(a.mood.shifted&&a.mood.shift){
-    mc.appendChild(el("div","note",`<br>Shifted at ${fmtT(a.mood.shift.t)}:`));
+    mc.appendChild(el("div","note-line","<br>Shifted at "+fmtT(a.mood.shift.t)+":"));
     mc.appendChild(evChip(a.mood.shift));
-  } else { mc.appendChild(el("div","note","<br>No clear mood shift.")); }
+  } else { mc.appendChild(el("div","note-line","<br>No clear mood shift.")); }
   right.appendChild(mc);
 
   const rc=el("div","card");
   rc.appendChild(el("h4",null,"Resolution"));
-  rc.appendChild(el("span","tag res-"+a.resolution.status,a.resolution.status.replace(/_/g," ")));
+  const rp=el("div"); rp.innerHTML=resPill(a.resolution.status); rc.appendChild(rp);
   rc.appendChild(evChip(a.resolution.evidence));
   right.appendChild(rc);
 
@@ -361,27 +1438,136 @@ async function openCall(sid){
   ac.appendChild(ul); right.appendChild(ac);
 
   grid.appendChild(left); grid.appendChild(right); m.appendChild(grid);
+
+  // ---- sibling-call widgets: where does a manager go from here? ----
+  const ctxWrap = el("div","ctx-grid"); m.appendChild(ctxWrap);
+  renderCallContext(ctxWrap, sid, c);
 }
 
-/* ---------- routing + upload ---------- */
+/* ---------- sibling-call widgets on the call detail view ---------- */
+function ctxRow(r, opts={}){
+  const row=el("div","ctx-row");
+  row.appendChild(el("div","score sev-"+sevOf(r.attention), String(r.attention)));
+  const mid=el("div","ctx-mid");
+  const head = opts.showCustomer ? r.customer_name : new Date(r.start_ms).toLocaleDateString();
+  mid.appendChild(el("div","ctx-head",
+    `${head} <span class="ctx-dim">· ${opts.showCustomer ? "Agent "+r.agent_name : r.intent_label}</span>`));
+  mid.appendChild(el("div","ctx-sum", r.summary||""));
+  const tags=el("div","ctx-tags");
+  tags.innerHTML = resPill(r.resolution) + `<span class="tag">${moodText(r.end_mood)}</span>`;
+  mid.appendChild(tags);
+  row.appendChild(mid);
+  row.onclick=()=>{ openCall(r.sid); window.scrollTo({top:0,behavior:"smooth"}); };
+  return row;
+}
+
+async function renderCallContext(wrap, sid, call){
+  wrap.innerHTML = `<div class="card"><div class="spinner"></div></div>
+                    <div class="card"><div class="spinner"></div></div>`;
+  let ctx;
+  try { ctx = await get(`/api/calls/${sid}/context`); }
+  catch(e){ wrap.innerHTML=""; return; }
+  wrap.innerHTML="";
+
+  /* --- widget 1: this customer's other calls --- */
+  const a=el("div","card");
+  a.appendChild(el("h4",null,`${ctx.customer_name} · other calls`));
+  if(ctx.same_issue_repeats > 0){
+    const flag=el("div","ctx-flag");
+    flag.innerHTML=`${ICONS.warnTri}<span><b>Called about this issue ${ctx.same_issue_repeats}
+      other time${ctx.same_issue_repeats===1?"":"s"}.</b> A repeat on the same issue is worth
+      checking — an earlier call marked resolved may not have been.</span>`;
+    a.appendChild(flag);
+  }
+  if(!ctx.customer_calls.length){
+    a.appendChild(el("div","ctx-empty","No other calls from this customer."));
+  } else {
+    const list=el("div","ctx-list");
+    ctx.customer_calls.forEach(r=>list.appendChild(ctxRow(r)));
+    a.appendChild(list);
+  }
+  wrap.appendChild(a);
+
+  /* --- widget 2: everyone else with the same issue --- */
+  const b=el("div","card");
+  const st=ctx.intent_stats||{};
+  const pct = st.n ? Math.round(100*st.resolved/st.n) : 0;
+  // Title the CATEGORY, not this call's intent_label -- the list is grouped by
+  // intent_cat, and the free-text label ("reset_password") would misdescribe it.
+  b.appendChild(el("h4",null,`Others with: ${(ctx.intent_cat||"").replace(/_/g," ")}`));
+  const bar=el("div","ctx-stats");
+  bar.innerHTML=`<span><b>${st.n||0}</b> calls</span>
+    <span><b>${st.customers||0}</b> customers</span>
+    <span><b>${pct}%</b> resolved</span>
+    <span>avg score <b>${Math.round(st.avg_attention||0)}</b></span>`;
+  b.appendChild(bar);
+  b.appendChild(el("div","ctx-note",
+    pct >= 80
+      ? `Most of these get resolved — the ${100-pct}% that don't are the ones worth a shared fix.`
+      : `Only ${pct}% of these get resolved. That points at a process gap, not a one-off call.`));
+  if(!ctx.same_intent.length){
+    b.appendChild(el("div","ctx-empty","No other customers with this intent."));
+  } else {
+    const list=el("div","ctx-list");
+    ctx.same_intent.forEach(r=>list.appendChild(ctxRow(r,{showCustomer:true})));
+    b.appendChild(list);
+  }
+  wrap.appendChild(b);
+}
+
+/* ---------- routing ---------- */
 function route(){
-  renderNav(); renderCustomers();
-  if(state.call) return;                 // openCall renders itself
-  if(state.view==="customer") return viewCustomer();
-  if(state.view==="trends")   return viewTrends();
-  if(state.view==="agents")   return viewAgents();
+  renderNav(); setSearchPlaceholder();
+  if(state.call) return;
+  if(state.view==="customer")  return viewCustomer();
+  if(state.view==="customers") return viewCustomers();
+  if(state.view==="trends")    return viewTrends();
+  if(state.view==="agents")    return viewAgents();
+  if(state.view==="upload")    return viewUpload();
   return viewAttention();
 }
-$("#fileInput").addEventListener("change", async e=>{
-  const f=e.target.files[0]; if(!f) return;
-  const fd=new FormData(); fd.append("file",f);
-  const btn=document.querySelector(".upload"); if(btn) btn.textContent="Processing…";
-  try{
-    const r=await fetch("/api/upload",{method:"POST",body:fd}).then(r=>r.json());
-    alert(`Ingested ${r.count} call(s).`); route();
-  }catch(err){ alert("Upload failed: "+err); }
+$("#fileInput").addEventListener("change", e=>{
+  const f=e.target.files[0]; if(f) handleUploadFile(f);
   e.target.value="";
 });
+// Search is server-side now (a paged view can only filter what the server sends), so it
+// refetches -- debounced to avoid a request per keystroke -- and resets to the first page.
+let searchTimer=null;
+$("#globalSearch").addEventListener("input", ()=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(()=>{
+    if(!["attention","customers","agents"].includes(state.view)) return;
+    pageState[state.view]=0;
+    // reload just the table -- the stat cards and chrome are unaffected by a search
+    (state.reloadPage || route)();
+  }, 300);
+});
+
+/* ---------- chrome init ---------- */
+$("#railToggle").innerHTML = ICONS.menu;
+$("#searchIcon").innerHTML = ICONS.search;
+$("#filterBtn").innerHTML = ICONS.filter;
+// the topbar filter icon was decorative -- point it at the panel that actually exists
+$("#filterBtn").onclick = (e)=>{
+  e.stopPropagation();
+  const b = $("#intentFilterBtn");
+  if(b) b.click();
+  else toast("Filters are available on the Needs Attention tab.", "ok", 3200);
+};
+$("#chevIcon").innerHTML = ICONS.chev;
+applyTheme(document.documentElement.getAttribute("data-theme")||"light");
+setCollapsed(getCollapsed());
+$("#railToggle").onclick=()=>setCollapsed(!$("#app").classList.contains("collapsed"));
+$("#scrim").onclick=()=>setCollapsed(true);
+$("#themeToggle").onclick=()=>applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+$("#pdTheme").onclick=()=>{ $("#themeToggle").click(); };
+$("#profileTrigger").onclick=(e)=>{ e.stopPropagation(); $("#profileDropdown").classList.toggle("open"); };
+document.addEventListener("click", ()=>$("#profileDropdown").classList.remove("open"));
+document.addEventListener("keydown", e=>{
+  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); $("#globalSearch").focus(); }
+  else if(e.key==="Escape"){ document.activeElement && document.activeElement.blur(); $("#profileDropdown").classList.remove("open"); closeOnMobile(); }
+});
+
 route();
 </script>
 </body>
