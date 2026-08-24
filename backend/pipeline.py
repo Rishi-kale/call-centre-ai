@@ -10,7 +10,7 @@ left channel leads the call (agent greeting) and is louder.
 import subprocess, json, tempfile, os, shutil, re
 from pathlib import Path
 
-_MODEL = None
+_MODELS = {}          # (model, device, compute) -> WhisperModel
 
 # ---------------------------------------------------------------------------
 # Domain-term correction
@@ -112,14 +112,30 @@ def apply_domain_corrections(turns):
     return turns
 
 
-def _get_model():
-    """Lazy-load faster-whisper once and reuse it for the whole batch."""
-    global _MODEL
-    if _MODEL is None:
+def _get_model(model=None, device=None, compute=None):
+    """Load a Whisper model, caching one instance per (model, device, compute).
+
+    Keyed rather than a single global so a caller can switch models between calls without
+    paying the load cost every time -- and without silently reusing the wrong one. Each
+    entry holds real memory (~1 GB for small, ~4.5 GB for large-v3), so the cache is
+    bounded and evicts the oldest when a third variant is requested.
+    """
+    from . import settings as _settings
+    cfg = _settings.load()          # Settings tab wins over the env defaults
+    key = (model or cfg["whisper_model"],
+           device or cfg["whisper_device"],
+           compute or cfg["whisper_compute"])
+    if key not in _MODELS:
         from faster_whisper import WhisperModel
-        from .config import WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE
-        _MODEL = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE)
-    return _MODEL
+        if len(_MODELS) >= 2:
+            _MODELS.pop(next(iter(_MODELS)))       # keep memory bounded
+        _MODELS[key] = WhisperModel(key[0], device=key[1], compute_type=key[2])
+    return _MODELS[key]
+
+
+def loaded_models():
+    """Which (model, device, compute) combinations are currently resident."""
+    return [{"model": k[0], "device": k[1], "compute_type": k[2]} for k in _MODELS]
 
 
 def split_channels(mp3_path: str, workdir: str):
@@ -136,8 +152,8 @@ def split_channels(mp3_path: str, workdir: str):
     return agent_wav, caller_wav
 
 
-def _transcribe_channel(wav_path: str, speaker: str):
-    model = _get_model()
+def _transcribe_channel(wav_path: str, speaker: str, model_id=None):
+    model = _get_model(model_id)
     segments, _ = model.transcribe(
         wav_path, language="en",
         vad_filter=True, vad_parameters=dict(min_silence_duration_ms=500),
@@ -158,12 +174,17 @@ def _transcribe_channel(wav_path: str, speaker: str):
     return turns
 
 
-def transcribe_call(mp3_path: str):
-    """Return the merged, time-ordered list of conversation turns for one recording."""
+def transcribe_call(mp3_path: str, model_id=None):
+    """Return the merged, time-ordered list of conversation turns for one recording.
+
+    `model_id` overrides WHISPER_MODEL for this call only -- the upload UI uses it so a
+    single recording can be re-run on a bigger model without changing the server config.
+    """
     workdir = tempfile.mkdtemp(prefix="cr_")
     try:
         agent_wav, caller_wav = split_channels(mp3_path, workdir)
-        turns = _transcribe_channel(agent_wav, "agent") + _transcribe_channel(caller_wav, "caller")
+        turns = (_transcribe_channel(agent_wav, "agent", model_id)
+                 + _transcribe_channel(caller_wav, "caller", model_id))
         turns.sort(key=lambda t: t["start"])
         return apply_domain_corrections(split_merged_turns(turns))
     finally:

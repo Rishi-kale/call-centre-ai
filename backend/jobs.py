@@ -45,7 +45,7 @@ def list_jobs(limit: int = 20):
         return [_snapshot(_jobs[i]) for i in ids if i in _jobs]
 
 
-def create_job(filename: str, blob: bytes) -> dict:
+def create_job(filename: str, blob: bytes, model_id=None) -> dict:
     """Register an upload and queue it. Returns the job snapshot (with its id)."""
     job_id = uuid.uuid4().hex[:12]
     workdir = tempfile.mkdtemp(prefix="cr_job_")
@@ -55,6 +55,7 @@ def create_job(filename: str, blob: bytes) -> dict:
     job = {
         "id": job_id,
         "filename": filename,
+        "model": model_id,                        # None = server default
         "status": "queued",                       # queued | running | done | failed
         "total": None,                            # unknown until the zip is opened
         "processed": 0,
@@ -107,7 +108,8 @@ def _process(job_id: str):
                 # Ingest reads from the extracted temp copy, so do that FIRST and only
                 # publish into data/audio/ once it succeeds. Copying first would leave an
                 # orphan mp3 with no DB row behind every failed recording.
-                batch.ingest_one(str(audios[sid]), str(metas[sid]))
+                batch.ingest_one(str(audios[sid]), str(metas[sid]),
+                                 model_id=job.get("model"))
                 shutil.copy(audios[sid], Path(AUDIO_DIR) / f"{sid}.mp3")
                 (job["skipped"] if already else job["ingested"]).append(sid)
             except Exception as e:                # one bad recording must not sink the job

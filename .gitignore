@@ -9,3 +9,6 @@ data/metadata/*.json
 
 # local DB snapshots
 callradar.db.bak*
+
+# runtime settings chosen in the dashboard
+callradar-settings.json

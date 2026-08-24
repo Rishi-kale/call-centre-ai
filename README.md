@@ -100,8 +100,11 @@ on the day flows through exactly what was validated on the full corpus.
 | GET | `/api/agents` | **paged** — per-agent volume, handle time, outcomes, clarification signal |
 | GET | `/api/stats` | corpus totals for the dashboard stat cards |
 | GET | `/api/filters` | available intent / resolution filter values, with counts |
+| GET | `/api/models` | Whisper model catalogue, detected hardware, and the recommended model |
+| GET | `/api/settings` | current model choices, the options, and which LLM providers have keys |
+| PUT | `/api/settings` | change the transcription or analysis model (validated, persisted) |
 | GET | `/audio/{sid}.mp3` | the recording (supports range requests → seeking) |
-| POST | `/api/upload` | queue a `.zip` of new calls → **202** with a job id |
+| POST | `/api/upload` | queue a `.zip` of new calls → **202** with a job id. `?model=` overrides the transcription model for that upload |
 | GET | `/api/jobs/{id}` | that ingest job's progress |
 | GET | `/api/jobs?limit=20` | recent ingest jobs |
 
@@ -142,6 +145,47 @@ Sorting is **total**, not just "good enough": each `ORDER BY` ends with a unique
 undefined under `LIMIT`/`OFFSET`, so the same row can appear on two pages while another is
 skipped — 859 calls here share an attention score of 0, so the corpus would hit that
 immediately. Paging the full 1,440 calls returns each row exactly once.
+
+### Settings tab
+
+The dashboard's **Settings** tab is the single place the models are chosen:
+
+- **Transcription (Whisper)** — the catalogue, this machine's hardware, the recommendation
+  and its reasoning. Picking one persists to `callradar-settings.json` and applies to every
+  later transcription.
+- **Analysis (LLM)** — Gemini, Groq and Anthropic with 2–3 models each, plus the
+  deterministic heuristic. A provider with no API key is greyed out and names the env var
+  it needs. **Automatic** follows whichever provider has a key and falls back to the
+  heuristic.
+
+API keys are never sent to the browser or settable through the API — the UI only learns
+*whether* a provider has one. Settings are validated server-side: an unknown model, or a
+provider without a key, returns 400 rather than being stored.
+
+`.env` is now loaded by `backend/config.py` at import. Previously the keys only reached the
+process if the shell had exported them, so `make run` (and `source .env`, which does not
+exist on Windows) left the API silently using the heuristic backend.
+
+### Choosing a transcription model
+
+`GET /api/models` reports the model catalogue, what the machine actually has (CUDA device
+and VRAM, CPU cores, total and **free** RAM), and a recommendation with its reasoning. The
+Bulk Upload page shows this and preselects the recommendation; `?model=` on the upload
+overrides it for that batch only, without changing the server default.
+
+Detection needs no extra dependency: CUDA presence and compute types come from
+`ctranslate2` (already required by faster-whisper), VRAM from `nvidia-smi` when present,
+RAM from the OS.
+
+The recommendation is deliberately conservative on CPU — it weighs **free** RAM, not just
+total, because a model that swaps is slower than a smaller one that fits. Measured on this
+corpus: `small`/int8 runs ~28 s per one-minute call on 12 cores; `large-v3` is ~6x that on
+CPU. `large-v3-turbo` is listed but not recommended — tested on this 8 kHz audio it was
+both slower than `small` *and* less stable, garbling one caller's turns into a run-on.
+
+Models are cached per `(model, device, compute_type)` and the cache holds two at most,
+evicting the oldest — each resident model is real memory (~1 GB for small, ~4.5 GB for
+large-v3).
 
 ### Uploads are asynchronous
 

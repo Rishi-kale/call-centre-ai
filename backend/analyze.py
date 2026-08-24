@@ -456,8 +456,10 @@ def _validate_shape(raw):
 def analyze(turns, meta, backend="auto", model=None):
     """Full analysis for one call. Returns a dict ready for the DB."""
     if backend == "auto":
-        backend = ("gemini" if GEMINI_API_KEY else "groq" if GROQ_API_KEY
-                   else "anthropic" if ANTHROPIC_API_KEY else "heuristic")
+        # honour the Settings tab; it falls back to key-order then heuristic itself
+        from . import settings as _settings
+        backend, chosen = _settings.resolve_llm()
+        model = model or chosen
 
     raw = None
     used_backend = "heuristic"

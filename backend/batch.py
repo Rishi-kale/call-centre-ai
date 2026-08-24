@@ -10,7 +10,7 @@ from .config import AUDIO_DIR, META_DIR
 from . import pipeline, analyze, db
 
 
-def ingest_one(mp3_path: str, json_path: str, backend="auto", force=False) -> str:
+def ingest_one(mp3_path: str, json_path: str, backend="auto", force=False, model_id=None) -> str:
     """Transcribe + analyse + store one call. Returns its sid.
 
     Already-ingested calls are skipped unless force=True: transcription is the expensive
@@ -21,7 +21,7 @@ def ingest_one(mp3_path: str, json_path: str, backend="auto", force=False) -> st
     sid = meta["sid"]
     if not force and db.get_call(sid):
         return sid
-    turns = pipeline.transcribe_call(mp3_path)
+    turns = pipeline.transcribe_call(mp3_path, model_id=model_id)
     result = analyze.analyze(turns, meta, backend=backend)
     row = {
         "sid": sid,

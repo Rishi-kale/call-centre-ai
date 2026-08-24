@@ -3,6 +3,32 @@ import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+
+def _load_dotenv(path):
+    """Read .env into the environment if it exists.
+
+    Without this the API keys only reach the process when the shell exported them, so
+    `make run` / uvicorn started any other way silently fell back to the heuristic
+    backend -- and `source .env` from the README does not exist on Windows at all.
+    Real environment variables always win, so an explicit export still overrides the file.
+    """
+    try:
+        if not path.exists():
+            return
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key, val = key.strip(), val.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = val
+    except Exception:
+        pass                      # a malformed .env must not stop the app from booting
+
+
+_load_dotenv(ROOT / ".env")
 DATA_DIR = Path(os.getenv("CALLRADAR_DATA", ROOT / "data"))
 AUDIO_DIR = DATA_DIR / "audio"
 META_DIR = DATA_DIR / "metadata"

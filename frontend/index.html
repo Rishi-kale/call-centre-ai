@@ -303,6 +303,63 @@
         align-items:center;gap:6px;font-weight:600}
   .back svg{width:13px;height:13px}
 
+  /* transcription model picker */
+  .hw-line{font-size:12.5px;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .hw-line b{color:var(--ink);font-weight:600}
+  .rec-box{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;background:var(--accent-soft-bg);
+           border-radius:8px;padding:10px 13px;margin-top:12px;font-size:13px;color:var(--ink)}
+  .rec-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+           font-weight:700;color:var(--accent)}
+  .rec-why{color:var(--muted);font-size:12.5px;flex:1;min-width:180px}
+  .rec-warn{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--hot-soft-fg);
+            margin-top:8px;line-height:1.5}
+  .rec-warn svg{width:14px;height:14px;flex:0 0 14px;margin-top:2px}
+  .model-list{display:flex;flex-direction:column;gap:2px;margin-top:14px}
+  .model-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;
+             padding:11px 12px;border-radius:9px;cursor:pointer;border:1px solid transparent;
+             transition:background .12s,border-color .12s}
+  .model-row:hover{background:var(--panel-2)}
+  .model-row.on{background:var(--panel-2);border-color:var(--accent)}
+  .model-row input{accent-color:var(--accent);width:15px;height:15px;margin-top:2px;cursor:pointer}
+  .model-name{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;
+              gap:7px;flex-wrap:wrap}
+  .model-params{font-family:var(--mono);font-size:10.5px;color:var(--dim);font-weight:400}
+  .model-badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+               font-weight:700;border-radius:99px;padding:2px 7px}
+  .model-badge.rec{background:var(--accent);color:#fff}
+  .model-badge.cur{background:var(--panel-3);color:var(--muted)}
+  .model-note{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45;max-width:52ch}
+  .model-meta{text-align:right;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .model-ram{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px}
+  /* settings: provider cards */
+  .prov{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:12px}
+  .prov.off{opacity:.62}
+  .prov-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .prov-name{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .prov-badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
+              font-weight:700;border-radius:99px;padding:3px 9px;display:inline-flex;
+              align-items:center;gap:5px}
+  .prov-badge svg{width:11px;height:11px}
+  .prov-badge.ok{background:var(--warn-soft-bg);color:var(--warn-soft-fg)}
+  .prov-badge.no{background:var(--panel-3);color:var(--dim)}
+  .prov-hint{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .prov-hint code{font-family:var(--mono);font-size:11px;background:var(--panel-2);
+                  border-radius:4px;padding:1px 5px;color:var(--ink)}
+  .prov-auto{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
+             padding:12px 14px;border:1px solid var(--border);border-radius:10px;
+             cursor:pointer;margin-top:4px}
+  .prov-auto.on{border-color:var(--accent);background:var(--panel-2)}
+  .prov-auto input{accent-color:var(--accent);width:15px;height:15px;margin-top:2px;cursor:pointer}
+  .model-row.disabled{opacity:.55;cursor:not-allowed}
+  .upload-model{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:10px;
+                flex-wrap:wrap;padding:2px 4px 14px}
+  .upload-model b{color:var(--ink);font-weight:600}
+  .link-btn{all:unset;cursor:pointer;color:var(--accent);font-size:12.5px;text-decoration:underline}
+  .link-btn:hover{color:var(--accent-hover)}
+  .qi-model{font-family:var(--mono);font-size:10px;background:var(--accent-soft-bg);
+            color:var(--accent-soft-fg);border-radius:20px;padding:2px 8px;margin-left:8px;
+            font-weight:600}
+
   /* summary cell + tooltip */
   .sum-cell{max-width:330px}
   .sum-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
@@ -504,6 +561,8 @@ const ICONS = {
   filter: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="4 4 20 4 14 12.5 14 19 10 21 10 12.5 4 4"/></svg>`,
   chev: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
   x: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  cog: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15z"/></svg>`,
+  check2: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
   chevL: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>`,
   chevR: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><polyline points="9 18 15 12 9 6"/></svg>`,
   bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
@@ -565,6 +624,7 @@ const SEARCH_PLACEHOLDERS = {
   attention:"Search customer, agent, summary or intent...",
   customers:"Search customer names...",
   trends:"Search trends...", agents:"Search agent names...", upload:"Search...",
+  settings:"Search...",
   customer:"Search this customer's calls...",
 };
 function setSearchPlaceholder(){ $("#globalSearch").placeholder = SEARCH_PLACEHOLDERS[state.view] || "Search..."; }
@@ -600,7 +660,8 @@ function wireSeekChips(container, sid){
 
 /* ---------- nav ---------- */
 const NAV = [["attention","Needs Attention","bell"],["customers","Customers","users2"],
-             ["trends","Trends","trend"],["agents","Agents","headset"],["upload","Bulk Upload","upload"]];
+             ["trends","Trends","trend"],["agents","Agents","headset"],["upload","Bulk Upload","upload"],
+             ["settings","Settings","cog"]];
 function renderNav(){
   const n=$("#nav"); n.innerHTML="";
   NAV.forEach(([k,label,icon])=>{
@@ -1205,6 +1266,136 @@ function renderAgentsTable(body, p){
   body.appendChild(pager(p, "agents", ()=>loadAgentsPage(body)));
 }
 
+/* ---------- settings ---------- */
+async function saveSettings(patch, onDone){
+  try{
+    const r = await fetch("/api/settings", {
+      method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(patch)
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.detail || "could not save");
+    state.cache.settings = null;          // force a refetch so the view reflects the server
+    toast("Saved.", "ok", 2200);
+    if(onDone) onDone(d);
+  }catch(e){ toast("Could not save: "+e.message, "err"); }
+}
+
+async function viewSettings(){
+  const m = freshMain();
+  m.appendChild(el("div","page-head",`<div><h2>Settings</h2>
+    <div class="note">Which models this system uses to transcribe and to analyse.</div></div>`));
+  const body = el("div"); body.appendChild(el("div","spinner")); m.appendChild(body);
+
+  let info;
+  try {
+    if(!state.cache.settings) state.cache.settings = await get("/api/settings");
+    info = state.cache.settings;
+  } catch(e){
+    body.innerHTML=""; body.appendChild(el("div","empty","Could not load settings."));
+    return;
+  }
+  body.innerHTML="";
+  const cur = info.settings, w = info.whisper, hw = w.hardware || {}, rec = w.recommended || {};
+
+  /* ---- transcription ---- */
+  const tc = el("div","card");
+  tc.appendChild(el("h4",null,"Transcription model (Whisper)"));
+
+  const bits = [hw.cuda_devices
+    ? `<b>GPU</b> ${esc(hw.gpus?.[0]?.name || "CUDA device")}${hw.vram_gb?` · ${hw.vram_gb} GB VRAM`:""}`
+    : `<b>CPU only</b> — no CUDA GPU detected`];
+  if(hw.cpu_cores) bits.push(`${hw.cpu_cores} cores`);
+  if(hw.ram_total_gb) bits.push(`${hw.ram_total_gb} GB RAM${hw.ram_available_gb!=null?` (${hw.ram_available_gb} free)`:""}`);
+  tc.appendChild(el("div","hw-line", bits.join(" &nbsp;·&nbsp; ")));
+
+  const recBox = el("div","rec-box");
+  recBox.innerHTML = `<span class="rec-tag">Recommended</span>
+    <b>${esc((w.catalogue.find(x=>x.id===rec.model)||{}).label || rec.model || "")}</b>
+    <span class="rec-why">${esc(rec.reason||"")}</span>`;
+  tc.appendChild(recBox);
+  (rec.warnings||[]).forEach(msg=>{
+    const n=el("div","rec-warn"); n.innerHTML=`${ICONS.alertCircle}<span>${esc(msg)}</span>`;
+    tc.appendChild(n);
+  });
+
+  const wlist = el("div","model-list");
+  w.catalogue.forEach(mm=>{
+    const on = mm.id === cur.whisper_model;
+    const row = el("label","model-row"+(on?" on":""));
+    const radio = el("input"); radio.type="radio"; radio.name="whispermodel"; radio.checked=on;
+    radio.onchange = ()=> saveSettings({whisper_model: mm.id}, ()=>route());
+    row.appendChild(radio);
+    const mid = el("div","model-mid");
+    mid.innerHTML = `<div class="model-name">${esc(mm.label)}
+        <span class="model-params">${esc(mm.params)}</span>
+        ${mm.id===rec.model?'<span class="model-badge rec">recommended</span>':""}
+        ${on?'<span class="model-badge cur">in use</span>':""}</div>
+      <div class="model-note">${esc(mm.note)}</div>`;
+    row.appendChild(mid);
+    row.appendChild(el("div","model-meta",
+      `<div>${esc(mm.speed)}</div><div class="model-ram">~${mm.ram_gb} GB</div>`));
+    wlist.appendChild(row);
+  });
+  tc.appendChild(wlist);
+  if((w.loaded||[]).length){
+    tc.appendChild(el("div","note-line",
+      "Loaded in memory: " + w.loaded.map(l=>`${l.model} (${l.device}/${l.compute_type})`).join(", ")));
+  }
+  body.appendChild(tc);
+
+  /* ---- analysis ---- */
+  const ac = el("div","card");
+  ac.appendChild(el("h4",null,"Analysis model (LLM)"));
+  const eff = info.effective_llm || {};
+  ac.appendChild(el("div","rec-box",
+    `<span class="rec-tag">In use</span><b>${esc(eff.backend||"")}</b>` +
+    (eff.model?`<span class="rec-why">${esc(eff.model)}</span>`:
+     `<span class="rec-why">Deterministic keyword rules — no API key needed.</span>`)));
+
+  // "Auto" row: follow whichever provider has a key
+  const autoRow = el("label","prov-auto"+(cur.llm_backend==="auto"?" on":""));
+  const autoRadio = el("input"); autoRadio.type="radio"; autoRadio.name="llmbackend";
+  autoRadio.checked = cur.llm_backend==="auto";
+  autoRadio.onchange = ()=> saveSettings({llm_backend:"auto", llm_model:null}, ()=>route());
+  autoRow.appendChild(autoRadio);
+  autoRow.appendChild(el("div",null,
+    `<div class="model-name">Automatic</div>
+     <div class="model-note">Use the first provider that has an API key, and fall back to the
+      heuristic if none do. Currently resolves to <b>${esc(eff.backend||"")}</b>.</div>`));
+  ac.appendChild(autoRow);
+
+  info.providers.forEach(p=>{
+    const card = el("div","prov"+(p.available?"":" off"));
+    const head = el("div","prov-head");
+    head.innerHTML = `<span class="prov-name">${esc(p.label)}</span>` +
+      (p.available
+        ? `<span class="prov-badge ok">${ICONS.check2} key configured</span>`
+        : `<span class="prov-badge no">no key</span>`);
+    card.appendChild(head);
+    if(!p.available && p.env){
+      card.appendChild(el("div","prov-hint",
+        `Set <code>${esc(p.env)}</code> in <code>.env</code>${p.signup?` — get one at ${esc(p.signup)}`:""}`));
+    }
+    p.models.forEach(mm=>{
+      const on = cur.llm_backend===p.id && (cur.llm_model===mm.id ||
+                 (!cur.llm_model && eff.backend===p.id && eff.model===mm.id));
+      const row = el("label","model-row"+(on?" on":"")+(p.available?"":" disabled"));
+      const radio = el("input"); radio.type="radio"; radio.name="llmbackend";
+      radio.checked = on; radio.disabled = !p.available;
+      radio.onchange = ()=> saveSettings({llm_backend:p.id, llm_model:mm.id}, ()=>route());
+      row.appendChild(radio);
+      const mid = el("div","model-mid");
+      mid.innerHTML = `<div class="model-name">${esc(mm.label)}</div>
+        <div class="model-note">${esc(mm.note)}</div>`;
+      row.appendChild(mid);
+      row.appendChild(el("div","model-meta",`<div class="model-ram">${esc(mm.id)}</div>`));
+      card.appendChild(row);
+    });
+    ac.appendChild(card);
+  });
+  body.appendChild(ac);
+}
+
 /* ---------- bulk upload ---------- */
 function viewUpload(){
   const m=freshMain();
@@ -1224,6 +1415,16 @@ function viewUpload(){
     const f = e.dataTransfer.files[0]; if(f) handleUploadFile(f);
   });
   card.appendChild(dz); m.appendChild(card);
+  const modelSlot=el("div","upload-model"); m.appendChild(modelSlot);
+  get("/api/settings").then(info=>{
+    const wm = info.settings.whisper_model, eff = info.effective_llm || {};
+    const label = (info.whisper.catalogue.find(x=>x.id===wm)||{}).label || wm;
+    modelSlot.innerHTML = `Transcribing with <b>${esc(label)}</b>, analysing with
+      <b>${esc(eff.backend||"")}</b>${eff.model?` (${esc(eff.model)})`:""}.`;
+    const link=el("button","link-btn","Change in Settings");
+    link.onclick=()=>{ state.view="settings"; route(); };
+    modelSlot.appendChild(link);
+  }).catch(()=>{});
 
   const qHead=el("div","queue-head");
   qHead.innerHTML=`<h4>Upload Queue</h4>`;
@@ -1263,7 +1464,8 @@ function renderUploadQueue(list){
     const doneLabel = `${u.ingested.length} ingested`
       + ((u.skipped||[]).length ? ` · ${u.skipped.length} skipped` : "");
     const busyLabel = u.total ? `Processing ${u.processed||0} / ${u.total}…` : "Queued…";
-    top.innerHTML=`<div class="qi-icon">${ICONS.file}</div><div class="qi-name">${u.name}</div>
+    top.innerHTML=`<div class="qi-icon">${ICONS.file}</div>
+      <div class="qi-name">${u.name}</div>
       <div class="qi-status ${u.status==='processing'?'processing':u.status==='done'?'ok':'err'}">
         ${u.status==='processing'?busyLabel:u.status==='done'?doneLabel:'Failed'}</div>`;
     if(u.status!=="processing"){
@@ -1312,6 +1514,8 @@ async function handleUploadFile(file){
   try{
     // The server queues the zip and returns a job id straight away -- transcription is
     // ~30s per call, far too slow to hold the request open. Poll for progress instead.
+    // no ?model= from the UI: the Settings tab is the single source of truth, and the
+    // server reads it per call. The query param stays available for scripted overrides.
     const job = await fetch("/api/upload",{method:"POST",body:fd}).then(r=>r.json());
     if(!job.id) throw new Error(job.detail || "upload rejected");
     entry.jobId = job.id;
@@ -1524,6 +1728,7 @@ function route(){
   if(state.view==="trends")    return viewTrends();
   if(state.view==="agents")    return viewAgents();
   if(state.view==="upload")    return viewUpload();
+  if(state.view==="settings")  return viewSettings();
   return viewAttention();
 }
 $("#fileInput").addEventListener("change", e=>{

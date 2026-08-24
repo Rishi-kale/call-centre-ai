@@ -64,6 +64,76 @@ def call_context(sid: str, limit: int = 12):
     return ctx
 
 
+@app.get("/api/models")
+def models():
+    """Whisper models, what this machine can run, and what we recommend for it.
+
+    The upload UI reads this so the model choice is made against real hardware rather
+    than a guess.
+    """
+    from . import hardware, pipeline
+    from .config import WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE
+    hw = hardware.detect()
+    return {
+        "catalogue": hardware.MODEL_CATALOGUE,
+        "hardware": hw,
+        "recommended": hardware.recommend(hw),
+        "current": {"model": WHISPER_MODEL, "device": WHISPER_DEVICE,
+                    "compute_type": WHISPER_COMPUTE},
+        "loaded": pipeline.loaded_models(),
+    }
+
+
+@app.get("/api/settings")
+def get_settings():
+    """Everything the Settings tab needs: current choices, the options, and what this
+    machine can run. API keys are never returned -- only whether a provider has one."""
+    from . import hardware, pipeline, settings as st
+    cur = st.load()
+    hw = hardware.detect()
+    backend, model = st.resolve_llm()
+    providers = []
+    for name, spec in st.LLM_CATALOGUE.items():
+        providers.append({
+            "id": name, "label": spec["label"], "signup": spec["signup"],
+            "env": spec["env"], "available": st.provider_available(name),
+            "models": spec["models"],
+        })
+    return {
+        "settings": cur,
+        "effective_llm": {"backend": backend, "model": model},
+        "providers": providers,
+        "whisper": {
+            "catalogue": hardware.MODEL_CATALOGUE,
+            "hardware": hw,
+            "recommended": hardware.recommend(hw),
+            "loaded": pipeline.loaded_models(),
+        },
+    }
+
+
+@app.put("/api/settings")
+def put_settings(payload: dict):
+    """Update settings. Validates every value so a bad write cannot wedge the pipeline."""
+    from . import hardware, settings as st
+    model = payload.get("whisper_model")
+    if model is not None and model not in hardware.MODEL_IDS:
+        raise HTTPException(400, f"unknown whisper_model. valid: {', '.join(hardware.MODEL_IDS)}")
+    backend = payload.get("llm_backend")
+    if backend is not None and backend != "auto" and backend not in st.LLM_CATALOGUE:
+        raise HTTPException(400, f"unknown llm_backend. valid: auto, {', '.join(st.LLM_CATALOGUE)}")
+    if backend and backend != "auto" and not st.provider_available(backend):
+        raise HTTPException(400, f"{backend} has no API key configured")
+    llm_model = payload.get("llm_model")
+    if llm_model is not None and backend and backend in st.LLM_CATALOGUE:
+        known = [m["id"] for m in st.LLM_CATALOGUE[backend]["models"]]
+        if llm_model not in known:
+            raise HTTPException(400, f"unknown llm_model for {backend}. valid: {', '.join(known)}")
+    saved = st.save(payload)
+    eff_backend, eff_model = st.resolve_llm()
+    return {"settings": saved, "effective_llm": {"backend": eff_backend, "model": eff_model}}
+
+
 @app.get("/api/filters")
 def filters():
     """Available filter values with counts, for the Needs Attention checkbox groups.
@@ -135,7 +205,8 @@ def audio(sid: str):
 
 # ---- live upload: same pipeline as the batch ------------------------------
 @app.post("/api/upload")
-async def upload(file: UploadFile = File(...), wait: bool = False):
+async def upload(file: UploadFile = File(...), wait: bool = False,
+                 model: str | None = None):
     """Accept a .zip of audio/ + metadata/ and queue it for ingest.
 
     Returns 202 with a job id immediately -- transcription costs ~30s per call, so a
@@ -145,12 +216,14 @@ async def upload(file: UploadFile = File(...), wait: bool = False):
     wait=true processes inline and returns the finished job instead. Handy for small
     uploads and scripted tests; do not use it for large batches.
     """
-    from . import jobs
+    from . import jobs, hardware
     name = (file.filename or "upload").lower()
     if not name.endswith(".zip"):
         raise HTTPException(400, "upload a .zip containing audio/ and metadata/")
+    if model and model not in hardware.MODEL_IDS:
+        raise HTTPException(400, f"unknown model. valid: {', '.join(hardware.MODEL_IDS)}")
     raw = await file.read()
-    job = jobs.create_job(file.filename or "upload.zip", raw)
+    job = jobs.create_job(file.filename or "upload.zip", raw, model_id=model)
     if not wait:
         return JSONResponse(job, status_code=202)
     while True:                                   # inline mode: drain then report
