@@ -303,54 +303,79 @@
         align-items:center;gap:6px;font-weight:600}
   .back svg{width:13px;height:13px}
 
-  /* transcription model picker */
-  .hw-line{font-size:12.5px;color:var(--muted);padding-bottom:12px;border-bottom:1px solid var(--border)}
-  .hw-line b{color:var(--ink);font-weight:600}
-  .rec-box{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;background:var(--accent-soft-bg);
-           border-radius:8px;padding:10px 13px;margin-top:12px;font-size:13px;color:var(--ink)}
+  /* ---- settings: section labels + cards ---- */
+  .sec-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+             color:var(--muted);font-weight:600;margin:26px 0 10px}
+  .sec-label:first-child{margin-top:4px}
+  .set-card{padding:16px 18px}
+
+  /* hardware facts strip */
+  .hw-strip{display:flex;align-items:center;flex-wrap:wrap;gap:0;background:var(--panel-2);
+            border:1px solid var(--border);border-radius:8px;padding:9px 13px;
+            font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .hw-strip b{color:var(--ink);font-weight:700;margin-right:9px;text-transform:uppercase;
+              letter-spacing:.04em}
+  .hw-strip span{color:var(--muted)}
+  .hw-sep{display:inline-block;width:1px;height:12px;background:var(--border);margin:0 13px}
+
+  /* recommendation + in-use strips */
+  .rec-strip,.inuse-strip{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+        background:var(--accent-soft-bg);border:1px solid var(--accent-soft-bg);
+        border-radius:8px;padding:10px 13px;margin-top:10px;font-size:13px;color:var(--ink)}
+  .rec-strip svg{width:15px;height:15px;color:var(--accent);flex:0 0 15px}
   .rec-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
-           font-weight:700;color:var(--accent)}
-  .rec-why{color:var(--muted);font-size:12.5px;flex:1;min-width:180px}
-  .rec-warn{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--hot-soft-fg);
-            margin-top:8px;line-height:1.5}
-  .rec-warn svg{width:14px;height:14px;flex:0 0 14px;margin-top:2px}
-  .model-list{display:flex;flex-direction:column;gap:2px;margin-top:14px}
-  .model-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;
-             padding:11px 12px;border-radius:9px;cursor:pointer;border:1px solid transparent;
-             transition:background .12s,border-color .12s}
-  .model-row:hover{background:var(--panel-2)}
-  .model-row.on{background:var(--panel-2);border-color:var(--accent)}
-  .model-row input{accent-color:var(--accent);width:15px;height:15px;margin-top:2px;cursor:pointer}
-  .model-name{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;
-              gap:7px;flex-wrap:wrap}
-  .model-params{font-family:var(--mono);font-size:10.5px;color:var(--dim);font-weight:400}
-  .model-badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
-               font-weight:700;border-radius:99px;padding:2px 7px}
-  .model-badge.rec{background:var(--accent);color:#fff}
-  .model-badge.cur{background:var(--panel-3);color:var(--muted)}
-  .model-note{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45;max-width:52ch}
-  .model-meta{text-align:right;font-size:11.5px;color:var(--muted);white-space:nowrap}
-  .model-ram{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px}
-  /* settings: provider cards */
-  .prov{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-top:12px}
-  .prov.off{opacity:.62}
-  .prov-head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-  .prov-name{font-size:13.5px;font-weight:600;color:var(--ink)}
-  .prov-badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;
-              font-weight:700;border-radius:99px;padding:3px 9px;display:inline-flex;
-              align-items:center;gap:5px}
-  .prov-badge svg{width:11px;height:11px}
-  .prov-badge.ok{background:var(--warn-soft-bg);color:var(--warn-soft-fg)}
-  .prov-badge.no{background:var(--panel-3);color:var(--dim)}
-  .prov-hint{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .prov-hint code{font-family:var(--mono);font-size:11px;background:var(--panel-2);
-                  border-radius:4px;padding:1px 5px;color:var(--ink)}
-  .prov-auto{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
-             padding:12px 14px;border:1px solid var(--border);border-radius:10px;
-             cursor:pointer;margin-top:4px}
-  .prov-auto.on{border-color:var(--accent);background:var(--panel-2)}
-  .prov-auto input{accent-color:var(--accent);width:15px;height:15px;margin-top:2px;cursor:pointer}
-  .model-row.disabled{opacity:.55;cursor:not-allowed}
+           font-weight:700;background:var(--accent);color:#fff;border-radius:4px;padding:3px 7px}
+  .rec-body{flex:1;min-width:200px;color:var(--body);font-size:12.5px}
+  .rec-body b{color:var(--ink)}
+  .inuse-strip b{font-size:13.5px}
+
+  /* warnings */
+  .warn-strip{background:var(--crit-soft-bg);border:1px solid var(--crit-soft-bg);
+              border-radius:8px;padding:10px 13px;margin-top:8px;
+              display:flex;flex-direction:column;gap:7px}
+  .warn-row{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;
+            color:var(--crit-soft-fg);line-height:1.5}
+  .warn-row svg{width:14px;height:14px;flex:0 0 14px;margin-top:2px}
+
+  /* option rows (shared by whisper + llm) */
+  .opt-list{display:flex;flex-direction:column;gap:2px;margin-top:12px}
+  .opt{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;
+       padding:12px 13px;border:1px solid transparent;border-radius:9px;cursor:pointer;
+       transition:background .12s,border-color .12s}
+  .opt:hover{background:var(--panel-2)}
+  .opt.on{background:var(--accent-soft-bg);border-color:var(--accent)}
+  .opt.disabled{opacity:.5;cursor:not-allowed}
+  .opt input{accent-color:var(--accent);width:15px;height:15px;margin-top:2px;cursor:pointer}
+  .opt.auto{margin-top:12px}
+  .opt-title{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;
+             align-items:center;gap:8px;flex-wrap:wrap}
+  .opt-sub{font-family:var(--mono);font-size:10.5px;color:var(--dim);font-weight:400}
+  .opt-note{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;max-width:62ch}
+  .opt-note b{color:var(--ink)}
+  .opt-right{text-align:right;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .opt-mono{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px}
+  .tagpill{font-family:var(--mono);font-size:9px;letter-spacing:.07em;text-transform:uppercase;
+           font-weight:700;border-radius:4px;padding:3px 7px;display:inline-flex;
+           align-items:center;gap:4px}
+  .tagpill svg{width:10px;height:10px}
+  .tagpill.rec{background:var(--accent);color:#fff}
+  .tagpill.use{background:var(--accent-soft-bg);color:var(--accent-soft-fg);
+               border:1px solid var(--accent)}
+  .tagpill.key{background:var(--warn-soft-bg);color:var(--warn-soft-fg)}
+  .tagpill.nokey{background:var(--panel-3);color:var(--dim)}
+  .loaded-line{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:12px;
+               padding-top:10px;border-top:1px solid var(--border)}
+
+  /* provider groups */
+  .prov-grp{margin-top:16px}
+  .prov-grp.off{opacity:.6}
+  .prov-head{display:flex;align-items:center;gap:9px;padding:0 2px 6px}
+  .prov-name{font-size:13px;font-weight:650;color:var(--ink)}
+  .prov-hint{font-size:11.5px;color:var(--muted);padding:0 2px 6px}
+  .prov-hint code{font-family:var(--mono);font-size:10.5px;background:var(--panel-2);
+                  border:1px solid var(--border);border-radius:4px;padding:1px 5px;color:var(--ink)}
+
+  /* upload page summary line */
   .upload-model{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:10px;
                 flex-wrap:wrap;padding:2px 4px 14px}
   .upload-model b{color:var(--ink);font-weight:600}
@@ -1297,101 +1322,108 @@ async function viewSettings(){
   body.innerHTML="";
   const cur = info.settings, w = info.whisper, hw = w.hardware || {}, rec = w.recommended || {};
 
-  /* ---- transcription ---- */
-  const tc = el("div","card");
-  tc.appendChild(el("h4",null,"Transcription model (Whisper)"));
+  /* ================= transcription ================= */
+  body.appendChild(el("div","sec-label","Transcription model (Whisper)"));
+  const tc = el("div","card set-card");
 
-  const bits = [hw.cuda_devices
-    ? `<b>GPU</b> ${esc(hw.gpus?.[0]?.name || "CUDA device")}${hw.vram_gb?` · ${hw.vram_gb} GB VRAM`:""}`
-    : `<b>CPU only</b> — no CUDA GPU detected`];
-  if(hw.cpu_cores) bits.push(`${hw.cpu_cores} cores`);
-  if(hw.ram_total_gb) bits.push(`${hw.ram_total_gb} GB RAM${hw.ram_available_gb!=null?` (${hw.ram_available_gb} free)`:""}`);
-  tc.appendChild(el("div","hw-line", bits.join(" &nbsp;·&nbsp; ")));
+  // hardware strip: pipe-separated facts, monospace, in its own bordered band
+  const facts = [hw.cuda_devices
+    ? `<b>GPU</b><span>${esc(hw.gpus?.[0]?.name || "CUDA device")}</span>`
+    : `<b>CPU only</b><span>no CUDA GPU detected</span>`];
+  if(hw.cuda_devices && hw.vram_gb) facts.push(`<span>${hw.vram_gb} GB VRAM</span>`);
+  if(hw.cpu_cores) facts.push(`<span>${hw.cpu_cores} cores</span>`);
+  if(hw.ram_total_gb) facts.push(
+    `<span>${hw.ram_total_gb} GB RAM${hw.ram_available_gb!=null?` (${hw.ram_available_gb} free)`:""}</span>`);
+  tc.appendChild(el("div","hw-strip", facts.join('<i class="hw-sep"></i>')));
 
-  const recBox = el("div","rec-box");
-  recBox.innerHTML = `<span class="rec-tag">Recommended</span>
-    <b>${esc((w.catalogue.find(x=>x.id===rec.model)||{}).label || rec.model || "")}</b>
-    <span class="rec-why">${esc(rec.reason||"")}</span>`;
+  const recBox = el("div","rec-strip");
+  recBox.innerHTML = `${ICONS.info}<span class="rec-tag">Recommended</span>
+    <span class="rec-body"><b>${esc((w.catalogue.find(x=>x.id===rec.model)||{}).label || rec.model || "")}:</b>
+    ${esc(rec.reason||"")}</span>`;
   tc.appendChild(recBox);
-  (rec.warnings||[]).forEach(msg=>{
-    const n=el("div","rec-warn"); n.innerHTML=`${ICONS.alertCircle}<span>${esc(msg)}</span>`;
-    tc.appendChild(n);
-  });
 
-  const wlist = el("div","model-list");
+  if((rec.warnings||[]).length){
+    const warn = el("div","warn-strip");
+    (rec.warnings||[]).forEach(msg=>{
+      const row = el("div","warn-row");
+      row.innerHTML = `${ICONS.warnTri}<span>${esc(msg)}</span>`;
+      warn.appendChild(row);
+    });
+    tc.appendChild(warn);
+  }
+
+  const wlist = el("div","opt-list");
   w.catalogue.forEach(mm=>{
     const on = mm.id === cur.whisper_model;
-    const row = el("label","model-row"+(on?" on":""));
+    const row = el("label","opt"+(on?" on":""));
     const radio = el("input"); radio.type="radio"; radio.name="whispermodel"; radio.checked=on;
     radio.onchange = ()=> saveSettings({whisper_model: mm.id}, ()=>route());
     row.appendChild(radio);
-    const mid = el("div","model-mid");
-    mid.innerHTML = `<div class="model-name">${esc(mm.label)}
-        <span class="model-params">${esc(mm.params)}</span>
-        ${mm.id===rec.model?'<span class="model-badge rec">recommended</span>':""}
-        ${on?'<span class="model-badge cur">in use</span>':""}</div>
-      <div class="model-note">${esc(mm.note)}</div>`;
+    const mid = el("div","opt-mid");
+    mid.innerHTML = `<div class="opt-title">${esc(mm.label)}
+        <span class="opt-sub">${esc(mm.params)}</span>
+        ${mm.id===rec.model?'<span class="tagpill rec">recommended</span>':""}
+        ${on?'<span class="tagpill use">in use</span>':""}</div>
+      <div class="opt-note">${esc(mm.note)}</div>`;
     row.appendChild(mid);
-    row.appendChild(el("div","model-meta",
-      `<div>${esc(mm.speed)}</div><div class="model-ram">~${mm.ram_gb} GB</div>`));
+    row.appendChild(el("div","opt-right",
+      `<div>${esc(mm.speed)}</div><div class="opt-mono">~${mm.ram_gb} GB</div>`));
     wlist.appendChild(row);
   });
   tc.appendChild(wlist);
   if((w.loaded||[]).length){
-    tc.appendChild(el("div","note-line",
-      "Loaded in memory: " + w.loaded.map(l=>`${l.model} (${l.device}/${l.compute_type})`).join(", ")));
+    tc.appendChild(el("div","loaded-line",
+      "Loaded in memory: " + w.loaded.map(l=>`${esc(l.model)} (${esc(l.device)}/${esc(l.compute_type)})`).join(", ")));
   }
   body.appendChild(tc);
 
-  /* ---- analysis ---- */
-  const ac = el("div","card");
-  ac.appendChild(el("h4",null,"Analysis model (LLM)"));
+  /* ================= analysis ================= */
+  body.appendChild(el("div","sec-label","Analysis model (LLM)"));
+  const ac = el("div","card set-card");
   const eff = info.effective_llm || {};
-  ac.appendChild(el("div","rec-box",
+  ac.appendChild(el("div","inuse-strip",
     `<span class="rec-tag">In use</span><b>${esc(eff.backend||"")}</b>` +
-    (eff.model?`<span class="rec-why">${esc(eff.model)}</span>`:
-     `<span class="rec-why">Deterministic keyword rules — no API key needed.</span>`)));
+    (eff.model ? `<span class="opt-mono">${esc(eff.model)}</span>`
+               : `<span class="rec-body">Deterministic keyword rules — no API key needed.</span>`)));
 
-  // "Auto" row: follow whichever provider has a key
-  const autoRow = el("label","prov-auto"+(cur.llm_backend==="auto"?" on":""));
+  const autoOn = cur.llm_backend === "auto";
+  const autoRow = el("label","opt auto"+(autoOn?" on":""));
   const autoRadio = el("input"); autoRadio.type="radio"; autoRadio.name="llmbackend";
-  autoRadio.checked = cur.llm_backend==="auto";
+  autoRadio.checked = autoOn;
   autoRadio.onchange = ()=> saveSettings({llm_backend:"auto", llm_model:null}, ()=>route());
   autoRow.appendChild(autoRadio);
-  autoRow.appendChild(el("div",null,
-    `<div class="model-name">Automatic</div>
-     <div class="model-note">Use the first provider that has an API key, and fall back to the
+  autoRow.appendChild(el("div","opt-mid",
+    `<div class="opt-title">Automatic</div>
+     <div class="opt-note">Use the first provider that has an API key, and fall back to the
       heuristic if none do. Currently resolves to <b>${esc(eff.backend||"")}</b>.</div>`));
   ac.appendChild(autoRow);
 
   info.providers.forEach(p=>{
-    const card = el("div","prov"+(p.available?"":" off"));
+    const grp = el("div","prov-grp"+(p.available?"":" off"));
     const head = el("div","prov-head");
     head.innerHTML = `<span class="prov-name">${esc(p.label)}</span>` +
-      (p.available
-        ? `<span class="prov-badge ok">${ICONS.check2} key configured</span>`
-        : `<span class="prov-badge no">no key</span>`);
-    card.appendChild(head);
+      (p.available ? `<span class="tagpill key">${ICONS.check2} key configured</span>`
+                   : `<span class="tagpill nokey">no key</span>`);
+    grp.appendChild(head);
     if(!p.available && p.env){
-      card.appendChild(el("div","prov-hint",
+      grp.appendChild(el("div","prov-hint",
         `Set <code>${esc(p.env)}</code> in <code>.env</code>${p.signup?` — get one at ${esc(p.signup)}`:""}`));
     }
     p.models.forEach(mm=>{
-      const on = cur.llm_backend===p.id && (cur.llm_model===mm.id ||
-                 (!cur.llm_model && eff.backend===p.id && eff.model===mm.id));
-      const row = el("label","model-row"+(on?" on":"")+(p.available?"":" disabled"));
+      const on = cur.llm_backend===p.id &&
+                 (cur.llm_model===mm.id || (!cur.llm_model && eff.model===mm.id));
+      const row = el("label","opt"+(on?" on":"")+(p.available?"":" disabled"));
       const radio = el("input"); radio.type="radio"; radio.name="llmbackend";
       radio.checked = on; radio.disabled = !p.available;
       radio.onchange = ()=> saveSettings({llm_backend:p.id, llm_model:mm.id}, ()=>route());
       row.appendChild(radio);
-      const mid = el("div","model-mid");
-      mid.innerHTML = `<div class="model-name">${esc(mm.label)}</div>
-        <div class="model-note">${esc(mm.note)}</div>`;
-      row.appendChild(mid);
-      row.appendChild(el("div","model-meta",`<div class="model-ram">${esc(mm.id)}</div>`));
-      card.appendChild(row);
+      row.appendChild(el("div","opt-mid",
+        `<div class="opt-title">${esc(mm.label)}</div>
+         <div class="opt-note">${esc(mm.note)}</div>`));
+      row.appendChild(el("div","opt-right",`<div class="opt-mono">${esc(mm.id)}</div>`));
+      grp.appendChild(row);
     });
-    ac.appendChild(card);
+    ac.appendChild(grp);
   });
   body.appendChild(ac);
 }
