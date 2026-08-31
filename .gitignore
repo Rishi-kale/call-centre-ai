@@ -6,3 +6,9 @@ data/audio/*.mp3
 data/metadata/*.json
 !data/.gitkeep
 .venv/
+
+# local DB snapshots
+callradar.db.bak*
+
+# runtime settings chosen in the dashboard
+callradar-settings.json

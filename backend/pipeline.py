@@ -7,20 +7,135 @@ independently, tag the speaker, and merge by timestamp. No diarization model nee
 Verified on the sample data: channel correlation ~0.001 (fully independent speakers),
 left channel leads the call (agent greeting) and is louder.
 """
-import subprocess, json, tempfile, os, shutil
+import subprocess, json, tempfile, os, shutil, re
 from pathlib import Path
 
-_MODEL = None
+_MODELS = {}          # (model, device, compute) -> WhisperModel
+
+# ---------------------------------------------------------------------------
+# Domain-term correction
+# ---------------------------------------------------------------------------
+# Whisper has no idea "Harper Valley National Bank" is a proper noun, so the scripted
+# greeting comes out wrong in ~20% of calls (Harbor / Hopper / Hapa / Upper / Hyper...).
+# The dataset's own metadata is the ground truth here: every session is named
+# "Little Harper Valley N" and the label key is `lhvb_script` (Little Harper Valley Bank).
+#
+# Substitution is deliberately narrow: only these observed misrecognitions, and only when
+# followed by the institutional name. A blanket "<word> Valley" rule would corrupt real
+# text -- e.g. "...calling for Valley..." where "for" is a legitimate word.
+_BANK_VARIANTS = [
+    "harbor", "harbour", "hopper", "hapa", "papa", "papua", "upper", "hyper", "halper",
+    "halberd", "harvard", "pepper", "copper", "heather", "hartford", "hubbard", "hover",
+    "helper", "happy", "parker", "tapper", "arbor", "huffer", "hoover", "harbert",
+]
+_BANK_RE = re.compile(
+    r"\b(" + "|".join(_BANK_VARIANTS) + r")(\s+Valley\s+(?:National\s+)?Bank)",
+    re.IGNORECASE,
+)
 
 
-def _get_model():
-    """Lazy-load faster-whisper once and reuse it for the whole batch."""
-    global _MODEL
-    if _MODEL is None:
+def correct_domain_terms(text: str) -> str:
+    """Fix known proper-noun misrecognitions in one piece of transcript text."""
+    return _BANK_RE.sub(lambda m: "Harper" + m.group(2), text)
+
+
+_VARIANT_SET = set(_BANK_VARIANTS)
+
+# ---------------------------------------------------------------------------
+# Turn splitting
+# ---------------------------------------------------------------------------
+# Whisper's VAD sometimes emits one "segment" spanning two utterances separated by a long
+# silence -- e.g. "What is your address?" at 18.6s and "A new checkbook has been sent..."
+# at 75.7s arrive as a single turn labelled start=18.56s.
+#
+# That breaks the one thing the product must get right: evidence cites turn["start"], so a
+# quote from the tail of a merged turn points at a timestamp ~1 minute before the words are
+# actually spoken. Split on the word timings we already have -- no re-transcription needed.
+#
+# Threshold: inter-word gaps in this corpus are bimodal (p95 = 1.14s for natural pauses,
+# p98 = 5.46s), so 2.0s sits in the valley between "pause" and "separate utterance".
+TURN_SPLIT_GAP_S = 2.0
+
+
+def split_merged_turns(turns, max_gap=TURN_SPLIT_GAP_S):
+    """Split any turn whose internal word gap exceeds max_gap into separate turns,
+    each carrying its own accurate start/end. Turns without word timings pass through."""
+    out = []
+    for t in turns:
+        words = t.get("words") or []
+        if len(words) < 2:
+            out.append(t)
+            continue
+        groups, cur = [], [words[0]]
+        for prev, nxt in zip(words, words[1:]):
+            if nxt["t"] - prev["t"] > max_gap:
+                groups.append(cur)
+                cur = [nxt]
+            else:
+                cur.append(nxt)
+        groups.append(cur)
+        if len(groups) == 1:
+            out.append(t)
+            continue
+        for i, g in enumerate(groups):
+            text = "".join(w["w"] for w in g).strip()
+            if not text:
+                continue
+            out.append({
+                "speaker": t["speaker"],
+                "start": round(g[0]["t"], 2),
+                # last fragment keeps the original end; earlier ones end at their last word
+                "end": round(t["end"] if i == len(groups) - 1 else g[-1]["t"], 2),
+                "text": text,
+                "words": g,
+            })
+    out.sort(key=lambda x: x["start"])
+    return out
+
+
+def apply_domain_corrections(turns):
+    """Apply correct_domain_terms across a transcript's turns (text + word tokens).
+
+    Word tokens are handled separately: they hold one word each (" Harbor", " Valley"),
+    so the contiguous regex above can never match them. Instead, rewrite a token when it
+    is a known variant AND the next token is "Valley" -- the same institutional-name
+    context the text-level rule requires.
+    """
+    for t in turns:
+        t["text"] = correct_domain_terms(t["text"])
+        words = t.get("words") or []
+        for i, w in enumerate(words):
+            bare = w["w"].strip().strip(".,!?;:").lower()
+            nxt = words[i + 1]["w"].strip().strip(".,!?;:").lower() if i + 1 < len(words) else ""
+            if bare in _VARIANT_SET and nxt == "valley":
+                w["w"] = w["w"].replace(w["w"].strip().strip(".,!?;:"), "Harper")
+    return turns
+
+
+def _get_model(model=None, device=None, compute=None):
+    """Load a Whisper model, caching one instance per (model, device, compute).
+
+    Keyed rather than a single global so a caller can switch models between calls without
+    paying the load cost every time -- and without silently reusing the wrong one. Each
+    entry holds real memory (~1 GB for small, ~4.5 GB for large-v3), so the cache is
+    bounded and evicts the oldest when a third variant is requested.
+    """
+    from . import settings as _settings
+    cfg = _settings.load()          # Settings tab wins over the env defaults
+    key = (model or cfg["whisper_model"],
+           device or cfg["whisper_device"],
+           compute or cfg["whisper_compute"])
+    if key not in _MODELS:
         from faster_whisper import WhisperModel
-        from .config import WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE
-        _MODEL = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE)
-    return _MODEL
+        if len(_MODELS) >= 2:
+            _MODELS.pop(next(iter(_MODELS)))       # keep memory bounded
+        _MODELS[key] = WhisperModel(key[0], device=key[1], compute_type=key[2])
+    return _MODELS[key]
+
+
+def loaded_models():
+    """Which (model, device, compute) combinations are currently resident."""
+    return [{"model": k[0], "device": k[1], "compute_type": k[2]} for k in _MODELS]
 
 
 def split_channels(mp3_path: str, workdir: str):
@@ -37,8 +152,8 @@ def split_channels(mp3_path: str, workdir: str):
     return agent_wav, caller_wav
 
 
-def _transcribe_channel(wav_path: str, speaker: str):
-    model = _get_model()
+def _transcribe_channel(wav_path: str, speaker: str, model_id=None):
+    model = _get_model(model_id)
     segments, _ = model.transcribe(
         wav_path, language="en",
         vad_filter=True, vad_parameters=dict(min_silence_duration_ms=500),
@@ -59,14 +174,19 @@ def _transcribe_channel(wav_path: str, speaker: str):
     return turns
 
 
-def transcribe_call(mp3_path: str):
-    """Return the merged, time-ordered list of conversation turns for one recording."""
+def transcribe_call(mp3_path: str, model_id=None):
+    """Return the merged, time-ordered list of conversation turns for one recording.
+
+    `model_id` overrides WHISPER_MODEL for this call only -- the upload UI uses it so a
+    single recording can be re-run on a bigger model without changing the server config.
+    """
     workdir = tempfile.mkdtemp(prefix="cr_")
     try:
         agent_wav, caller_wav = split_channels(mp3_path, workdir)
-        turns = _transcribe_channel(agent_wav, "agent") + _transcribe_channel(caller_wav, "caller")
+        turns = (_transcribe_channel(agent_wav, "agent", model_id)
+                 + _transcribe_channel(caller_wav, "caller", model_id))
         turns.sort(key=lambda t: t["start"])
-        return turns
+        return apply_domain_corrections(split_merged_turns(turns))
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
